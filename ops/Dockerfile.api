@@ -1,0 +1,57 @@
+# 面试请等等 · 后端 API 镜像
+#
+# 构建（在仓库根目录 D:\qiuzhibilei 下执行，上下文必须是仓库根）：
+#   docker build -f ops/Dockerfile.api -t qbl-api:local .
+#
+# 说明：
+# - 基础镜像用官方 slim 版，不装编译工具链，减小体积与攻击面。
+# - OCR 默认不装（一期本地 RapidOCR 体积大、需要模型文件）；要跑真 OCR 时用
+#   --build-arg INSTALL_OCR=1 打开，见 ops/README.md「可选本地 OCR」。
+# - 容器内不写源码路径的 var/，数据库与上传目录统一挂卷到 /data（见 docker-compose.yml）。
+
+# ---------- 构建阶段：只装依赖，利用层缓存 ----------
+FROM python:3.12-slim AS base
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    TZ=Asia/Shanghai
+
+WORKDIR /app
+
+# 运行依赖：先拷 requirements，源码变了不重装依赖
+COPY requirements.txt ./requirements.txt
+COPY backend/requirements.txt ./backend/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt -r backend/requirements.txt
+
+# ---------- 可选：本地 OCR（RapidOCR + onnxruntime，CPU 推理）----------
+ARG INSTALL_OCR=0
+RUN if [ "$INSTALL_OCR" = "1" ]; then \
+        apt-get update && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \
+        && rm -rf /var/lib/apt/lists/* \
+        && pip install --no-cache-dir "rapidocr>=3.10" "onnxruntime>=1.20" opencv-python-headless; \
+    fi
+
+# ---------- 拷源码（顺序按改动频率，代码最后）----------
+COPY engine/ ./engine/
+COPY rules/ ./rules/
+COPY backend/ ./backend/
+
+# 非 root 运行；数据目录归该用户所有
+RUN groupadd -r qbl && useradd -r -g qbl -d /data -s /sbin/nologin qbl \
+    && mkdir -p /data && chown -R qbl:qbl /data /app
+USER qbl
+
+# 容器内路径：数据库 / 上传 / 报告 / 去重缓存都放 /data，方便单卷备份
+ENV QBL_DB_PATH=/data/qbl.db \
+    QBL_UPLOAD_DIR=/data/uploads \
+    QBL_REPORT_DIR=/data/reports \
+    QBL_CACHE_DIR=/data/cache/dedupe \
+    QBL_API_HOST=0.0.0.0 \
+    QBL_API_PORT=8000
+
+EXPOSE 8000
+
+# 用 python -m uvicorn，避免依赖 PATH 里的 console script
+CMD ["python", "-m", "uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
