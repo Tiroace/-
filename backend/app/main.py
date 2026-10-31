@@ -15,15 +15,17 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from . import worker
+from . import retention, worker
 from .config import get_settings
 from .deps import get_db
 from .errors import AppError
 from .community.sensitive_seed import seed_sensitive_words
+from .logging_setup import setup_logging
 from .patterns_seed import seed_patterns
 from .routers import ad, admin, analysis, auth, community, feedback, orders, patterns
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+# R-04：日志落盘 + 按天轮转、保留 180 天（原来是 console-only，进程一停就没了）
+LOG_PATH = setup_logging(get_settings().project_root)
 logger = logging.getLogger("qbl")
 
 app = FastAPI(
@@ -126,9 +128,13 @@ def _startup() -> None:
     if words:
         logger.info("敏感词已灌种子：%d 条", words)
     logger.info("数据库就绪：%s", get_db().path)
+    logger.info("日志文件：%s（按天轮转，保留 %d 天）", LOG_PATH, 180)
+    # R-03：截图 24 小时删除的承诺由这个定时任务兑现，不是只挂个 expires_at 字段
+    retention.start()
 
 
 @app.on_event("shutdown")
 def _shutdown() -> None:
+    retention.stop()
     worker.shutdown(wait=False)
     logger.info("后台分析线程池已关闭")
