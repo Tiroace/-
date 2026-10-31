@@ -294,7 +294,7 @@ def _negated(text: str, start: int, negations: tuple[str, ...]) -> bool:
     # 顿号分隔的并列成分里，否定词只否定它自己那一项：
     # 「不负责装卸、不租车卖车、不收取费用，综合月收入 9500」——「不收取」管的是费用，
     # 不能顺带把后半句的高薪也否定掉，所以遇到顿号就只取顿号之后的部分。
-    for sep in ("、",):
+    for sep in ("、", "，", ","):
         cut = window.rfind(sep)
         if cut >= 0:
             window = window[cut + 1 :]
