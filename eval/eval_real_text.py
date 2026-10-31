@@ -1,13 +1,15 @@
 """确定性引擎在真实话术用例上的准确率（real_text 轨道），练习集/留出集分开报。
 
 用法：
-    python eval/eval_real_text.py [--verbose] [--split practice|holdout|all] [--threshold 0.95]
+    python eval/eval_real_text.py [--verbose] [--split practice|holdout|all] [--threshold 0.95] [--threshold-dim 0.90]
 
 为什么分开报：practice 集上的数字会被后续调规则「刷高」，它不代表真实上线表现；
 真正能说明泛化能力的是**冻结的留出集**（eval/splits.json，冻结后不得改动）。
 上线验收看留出集，不到线必须红着退出，不能静默通过。
 """
 from __future__ import annotations
+
+from _console import safe_console  # noqa: E402
 
 import json
 import sys
@@ -24,8 +26,10 @@ from engine.textnorm import DIMENSION_KEYS  # noqa: E402
 CASES = ROOT / "data" / "testset" / "real_cases_v1.jsonl"
 SPLITS = ROOT / "eval" / "splits.json"
 
-# 上线验收线：整体结论准确率（docs/11 上线清单 B 组）。练习集只作参考，不设门槛。
-ACCEPTANCE = 0.95
+# 上线验收线（docs/11 上线清单 B 组）：整体结论准确率与六维灯色一致率。
+# 只对留出集生效；练习集用于调规则，会被刷高，不设门槛。
+ACCEPTANCE = 0.95          # 整体结论准确率
+ACCEPTANCE_DIM = 0.90      # 六维灯色一致率
 
 
 def _argv(name: str, default: str | None = None) -> str | None:
@@ -86,8 +90,8 @@ def _evaluate(rows: list[dict], cfg) -> dict:
     }
 
 
-def _report(name: str, res: dict, threshold: float | None) -> bool:
-    """打印一组结果；返回是否达到验收线（threshold=None 表示不设门槛）。"""
+def _report(name: str, res: dict, threshold: float | None, dim_threshold: float = ACCEPTANCE_DIM) -> bool:
+    """打印一组结果；返回是否同时达到整体与六维两条验收线（threshold=None 表示不设门槛）。"""
     total = res["total"]
     print(f"\n【{name}】{total} 条")
     if total == 0:
@@ -105,16 +109,21 @@ def _report(name: str, res: dict, threshold: float | None) -> bool:
     if threshold is None:
         print("  验收线：不设门槛（练习集只作参考，不能用来代表泛化能力）")
         return True
-    ok = res["overall"] >= threshold
-    state = "达标" if ok else "**未达验收线**"
-    print(f"  验收线：{threshold:.0%} → {state}（差 {(threshold - res['overall']) * 100:+.1f} 个百分点）")
-    return ok
+    overall_ok = res["overall"] >= threshold
+    dim_ok = res["dim"] >= dim_threshold
+    state_o = "达标" if overall_ok else "**未达验收线**"
+    state_d = "达标" if dim_ok else "**未达验收线**"
+    print(f"  验收线·整体：{threshold:.0%} → {state_o}（{(res['overall'] - threshold) * 100:+.1f} 个百分点）")
+    print(f"  验收线·六维：{dim_threshold:.0%} → {state_d}（{(res['dim'] - dim_threshold) * 100:+.1f} 个百分点）")
+    return overall_ok and dim_ok
 
 
 def main() -> int:
+    safe_console()
     verbose = "--verbose" in sys.argv
     only = _argv("--split", "all")
     threshold = float(_argv("--threshold", str(ACCEPTANCE)) or ACCEPTANCE)
+    dim_threshold = float(_argv("--threshold-dim", str(ACCEPTANCE_DIM)) or ACCEPTANCE_DIM)
     cfg = default_config()
     cfg.use_dedupe = False
     cfg.report_dir = None
@@ -143,7 +152,7 @@ def main() -> int:
     for name, res in results.items():
         # 只有留出集代表泛化能力，练习集不设门槛
         show_threshold = threshold if (name == "holdout" and only in ("all", "holdout")) else None
-        passed = _report(name, res, show_threshold)
+        passed = _report(name, res, show_threshold, dim_threshold)
         if show_threshold is not None:
             ok = ok and passed
         if verbose:
@@ -156,7 +165,7 @@ def main() -> int:
     if unassigned:
         print(f"注意：{len(unassigned)} 条用例不在 splits.json 里：{unassigned[:10]}")
     if not ok:
-        print("结果：留出集未达上线验收线，不能据此发布新的 rules_version。")
+        print("结果：留出集未达上线验收线（整体或六维任一未达），不能据此发布新的 rules_version。")
         return 1
     return 0
 

@@ -12,6 +12,8 @@
 """
 from __future__ import annotations
 
+from _console import safe_console  # noqa: E402
+
 import json
 import statistics
 import sys
@@ -68,6 +70,7 @@ def norm(s: str) -> str:
 
 
 def main() -> int:
+    safe_console()
     from engine.config import default_config
     from engine.pipeline import analyze, make_model
 

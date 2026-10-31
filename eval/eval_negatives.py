@@ -4,6 +4,8 @@
 """
 from __future__ import annotations
 
+from _console import safe_console  # noqa: E402
+
 import json
 import sys
 from pathlib import Path
@@ -18,6 +20,7 @@ CASES = ROOT / "rules" / "rule_negatives_v1.json"
 
 
 def main() -> int:
+    safe_console()
     cfg = default_config()
     cfg.use_dedupe = False
     cfg.report_dir = None

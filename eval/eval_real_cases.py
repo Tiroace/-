@@ -6,6 +6,8 @@
 """
 from __future__ import annotations
 
+from _console import safe_console  # noqa: E402
+
 import json
 import sys
 from collections import Counter
@@ -18,6 +20,7 @@ CASES = ROOT / "data" / "testset" / "real_cases_v1.jsonl"
 
 
 def main() -> int:
+    safe_console()
     from engine.config import default_config
     from engine.pipeline import analyze, make_model
 
