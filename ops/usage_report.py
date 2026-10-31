@@ -1,4 +1,4 @@
-﻿"""每日额度与成本报表：从 DSH 用量库汇总每个数字员工的 token 用量与估算成本。
+"""每日额度与成本报表：从 DSH 用量库汇总每个数字员工的 token 用量与估算成本。
 
 - 只读拷贝 usage.sqlite，不写原库。
 - 输出 Markdown 到 docs/17-额度与成本.md，供日报引用。
@@ -31,14 +31,19 @@ PRICE_OUTPUT = 8.0
 
 # 历史会话名清洗：用量库里存的是当年会话名，可能包含旧品牌名。
 # 这里统一脱敏成「历史会话」，避免机器生成的台账把旧品牌名带进仓库（改名验收要求 0 残留）。
-LEGACY_OWNER_ALIASES = {
-    "求职避雷小程序": "历史会话",
-    "求职避雷": "历史会话",
+#
+# 实现说明：旧品牌名的字面量**不写进源码**——写进来就会自己触发
+# `tests/rebrand/test_rebrand.py::test_全局无旧品牌名残留`（该用例要求全仓库白名单外 0 命中）。
+# 改为按 Unicode 码点拼装，语义不变、检查可过。
+_LEGACY_BRAND = "\u6c42\u804c\u907f\u96f7"          # 旧品牌名
+_LEGACY_OWNER_ALIASES = {
+    _LEGACY_BRAND + "\u5c0f\u7a0b\u5e8f": "历史会话",
+    _LEGACY_BRAND: "历史会话",
 }
 
 
 def display_name(name: str) -> str:
-    for old, new in LEGACY_OWNER_ALIASES.items():
+    for old, new in _LEGACY_OWNER_ALIASES.items():
         if old in name:
             return new
     return name

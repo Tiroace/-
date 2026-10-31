@@ -1,13 +1,32 @@
+# 面试请等等 · 本地/预发一键编排
+#
+# 用法（在 ops/ 目录）：
+#   cp .env.example .env      # 填本地值，.env 不进仓库
+#   docker compose up -d --build
+#   docker compose ps
+#   curl http://127.0.0.1:8000/health
+#
+# 端口纪律：所有端口只绑 127.0.0.1，不对公网暴露；生产入口只有 Nginx/CVM 安全组。
+# 日志纪律：全部 json-file 驱动 + max-size，单容器日志上限 30MB，见 ops/上线方案.md。
+
 services:
+  # ---------------- 后端 API ----------------
   api:
     build:
       context: ..
       dockerfile: ops/Dockerfile.api
+    image: qbl-api:local
     env_file: .env
     environment:
+      QBL_ENV: ${QBL_ENV:-dev}
       QBL_DB_PATH: /data/qbl.db
+      QBL_UPLOAD_DIR: /data/uploads
+      QBL_REPORT_DIR: /data/reports
+      QBL_CACHE_DIR: /data/cache/dedupe
       QBL_USE_LLM: "0"
       QBL_FEATURE_COMMUNITY: "0"
+      QBL_WORKER_THREADS: ${QBL_WORKER_THREADS:-4}
+      TZ: Asia/Shanghai
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
@@ -17,33 +36,78 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
+  # ---------------- 数据库：MySQL 8.4 LTS ----------------
+  # 原型期后端仍走 SQLite（backend/app/db.py 单层替换，D2 决定）；
+  # 这里先把库按生产形态跑起来，迁移脚本见 ops/README.md「迁移」。
   mysql:
-    image: mysql:8.4
+    image: ${MYSQL_IMAGE:-mysql:8.4}
     environment:
-      MYSQL_DATABASE: qbl
-      MYSQL_USER: qbl
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-qbl}
+      MYSQL_USER: ${MYSQL_USER:-qbl}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change-me}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-me-root}
-    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+08:00
+      - --max-connections=200
+    ports:
+      # 只给本机调试用；生产不映射端口，只走容器网络
+      - "127.0.0.1:3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${MYSQL_ROOT_PASSWORD:-change-me-root}"]
+      # $$ 是 compose 转义，真正的变量在容器内解析
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
+  # ---------------- 缓存/队列：Redis 7.4 ----------------
   redis:
-    image: redis:7.4
-    command: ["redis-server", "--appendonly", "yes"]
+    image: ${REDIS_IMAGE:-redis:7.4}
+    # 有口令用 --requirepass；本地不设口令时退回只监听容器网络
+    command: >
+      sh -c 'redis-server --appendonly yes --appendfsync everysec
+      $${REDIS_PASSWORD:+--requirepass "$$REDIS_PASSWORD"}'
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      TZ: Asia/Shanghai
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
       interval: 10s
       timeout: 3s
       retries: 10
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   api_data:
