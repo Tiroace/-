@@ -276,8 +276,28 @@ def load_lexicon(path: str | Path, variants_path: str | Path | None = None) -> L
     )
 
 
+_CLAUSE_BOUNDARY = "。！？!?;；\n"
+
+
 def _negated(text: str, start: int, negations: tuple[str, ...]) -> bool:
-    window = text[max(0, start - 10) : start]
+    """否定词只在同一分句里生效。
+
+    以句号/问号/分号/换行为界向前最多看 10 个字；逗号、顿号不算断句（「不收取费用，月入 9500」
+    这类同句并列仍算同一分句），但遇到顿号分隔的并列短语时仍只看最近 10 字窗口。
+    """
+    left = max(0, start - 10)
+    window = text[left:start]
+    for i in range(len(window) - 1, -1, -1):
+        if window[i] in _CLAUSE_BOUNDARY:
+            window = window[i + 1 :]
+            break
+    # 顿号分隔的并列成分里，否定词只否定它自己那一项：
+    # 「不负责装卸、不租车卖车、不收取费用，综合月收入 9500」——「不收取」管的是费用，
+    # 不能顺带把后半句的高薪也否定掉，所以遇到顿号就只取顿号之后的部分。
+    for sep in ("、",):
+        cut = window.rfind(sep)
+        if cut >= 0:
+            window = window[cut + 1 :]
     return any(n in window for n in negations)
 
 

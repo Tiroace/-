@@ -1,6 +1,6 @@
 # 用确定性引擎生成 4 种 overall 的示例报告，写进前端 exampleReports.js
 # 优先用 data/examples/ 的标准示例；缺的（或字段过期的）用引擎现跑补齐
-# 用法：python miniprogram/scripts/gen-example-reports.py
+# 用法：python src/scripts/gen-example-reports.py
 import json
 import os
 import sys
@@ -9,6 +9,7 @@ ROOT = r"D:\qiuzhibilei"
 sys.path.insert(0, ROOT)
 
 from engine.pipeline import analyze  # noqa: E402
+from engine.prompts import RULES_VERSION  # noqa: E402
 
 EX_DIR = os.path.join(ROOT, "data", "examples")
 OUT_DIR = os.path.join(ROOT, "src", "src", "common")
@@ -30,12 +31,20 @@ def load_standard():
     return out
 
 
+def label_overall(row):
+    """测试集里 label 是嵌套结构 {overall, dimensions, patterns}，兼容旧的平铺写法"""
+    lab = row.get("label")
+    if isinstance(lab, dict):
+        return lab.get("overall")
+    return lab or row.get("overall")
+
+
 def run_engine():
     """引擎现跑，按 overall 分类取样本"""
     rows = [json.loads(l) for l in open(TEST, encoding="utf-8") if l.strip()]
     picked = {}
     for r in rows:
-        o = r.get("overall")
+        o = label_overall(r)
         if o in ORES and o not in picked:
             picked[o] = r
     result = {}
@@ -58,12 +67,12 @@ def run_engine():
 
 
 def normalize(report, overall):
-    """统一成当前的 v2 字段口径：有 rules_version，没有 prompt_version"""
+    """统一成当前字段口径：有 rules_version（引擎当前版本号），没有 prompt_version"""
     r = dict(report)
     r.pop("prompt_version", None)
-    if "rules_version" not in r:
-        # 标准示例是旧字段，引擎当前版本号是 v2.0
-        r["rules_version"] = "v2.0"
+    # 版本号取引擎当前值，不硬编码；引擎输出已带 rules_version 时优先用引擎的
+    if not r.get("rules_version"):
+        r["rules_version"] = RULES_VERSION
     # source 只允许 rule / pattern
     for f in r.get("findings", []):
         if f.get("source") not in ("rule", "pattern"):
@@ -95,8 +104,8 @@ def main():
 
     os.makedirs(OUT_DIR, exist_ok=True)
     with open(OUT_FILE, "w", encoding="utf-8") as f:
-        f.write("// 示例报告数据（由 miniprogram/scripts/gen-example-reports.py 生成，不要手改）\n")
-        f.write("// 来源：确定性引擎实际跑出的 v2 报告（优先 data/examples 标准示例），与真实引擎输出同构。\n")
+        f.write("// 示例报告数据（由 src/scripts/gen-example-reports.py 生成，不要手改）\n")
+        f.write("// 来源：确定性引擎实际跑出的报告（版本号取 engine.prompts.RULES_VERSION），与真实引擎输出同构。\n")
         f.write("// 用途：报告页 4 种 overall 形态展示与自测；内容是测试样本，不指向任何真实企业。\n")
         f.write("export const EXAMPLE_REPORTS = ")
         json.dump(final, f, ensure_ascii=False, indent=2)

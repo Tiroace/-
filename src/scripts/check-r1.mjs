@@ -283,6 +283,30 @@ if (!fs.existsSync(DIST)) {
   AI_RE_TEST(docSrc) ? fail('检查规则说明页仍含 AI 字样') : pass('检查规则说明页无 AI 字样');
 }
 
+// 22. 示例报告与引擎契约对齐（D3）：版本号不写死，必须等于 engine/prompts.py 的 RULES_VERSION
+{
+  const exSrc = fs.readFileSync(path.join(SRC, 'common/exampleReports.js'), 'utf8');
+  const engineVer = (fs.readFileSync('D:/qiuzhibilei/engine/prompts.py', 'utf8').match(/^RULES_VERSION\s*=\s*"([^"]+)"/m) || [])[1];
+  if (!engineVer) {
+    fail('读取引擎 RULES_VERSION', 'engine/prompts.py 里没找到 RULES_VERSION');
+  } else {
+    const versions = [...exSrc.matchAll(/"rules_version":\s*"([^"]*)"/g)].map((m) => m[1]);
+    const bad = [...new Set(versions.filter((v) => v !== engineVer))];
+    if (!versions.length) fail('示例报告带 rules_version', '一条都没有');
+    else if (bad.length) fail('示例报告版本与引擎一致（' + engineVer + '）', '不一致：' + bad.join(', '));
+    else pass('示例报告版本与引擎一致（' + engineVer + '，共 ' + versions.length + ' 份）');
+    exSrc.includes('prompt_version') ? fail('示例报告有 prompt_version') : pass('示例报告无 prompt_version');
+    // 示例必须是引擎现跑的，不能退化成读 data/examples 里的旧标准示例
+    ["red", "amber", "green", "unknown"].every((o) => versions.length && exSrc.includes('"' + o + '"'))
+      ? pass('示例报告 4 种 overall 齐全')
+      : fail('示例报告缺 overall');
+  }
+  const repSrc = fs.readFileSync(path.join(SRC, 'pages/report/index.vue'), 'utf8');
+  /rules_version:\s*'v\d/.test(repSrc)
+    ? fail('报告页未写死版本号', "发现 rules_version: 'v...'")
+    : pass('报告页未写死版本号');
+}
+
 function AI_RE_TEST(t) {
   return /(^|[^A-Za-z])AI([^A-Za-z]|$)/.test(t);
 }

@@ -1,4 +1,4 @@
-"""每日额度与成本报表：从 DSH 用量库汇总每个数字员工的 token 用量与估算成本。
+﻿"""每日额度与成本报表：从 DSH 用量库汇总每个数字员工的 token 用量与估算成本。
 
 - 只读拷贝 usage.sqlite，不写原库。
 - 输出 Markdown 到 docs/17-额度与成本.md，供日报引用。
@@ -28,6 +28,20 @@ BUDGET_FILE = ROOT / "docs" / "额度预算.json"
 PRICE_INPUT = 2.0
 PRICE_CACHE_HIT = 0.04
 PRICE_OUTPUT = 8.0
+
+# 历史会话名清洗：用量库里存的是当年会话名，可能包含旧品牌名。
+# 这里统一脱敏成「历史会话」，避免机器生成的台账把旧品牌名带进仓库（改名验收要求 0 残留）。
+LEGACY_OWNER_ALIASES = {
+    "求职避雷小程序": "历史会话",
+    "求职避雷": "历史会话",
+}
+
+
+def display_name(name: str) -> str:
+    for old, new in LEGACY_OWNER_ALIASES.items():
+        if old in name:
+            return new
+    return name
 
 
 @dataclass
@@ -92,7 +106,7 @@ def collect(month: str | None = None) -> Report:
     ).fetchall()
     con.close()
     for name, ts, inp, cache_read, out in rows:
-        name = name or "未知"
+        name = display_name(name or "未知")
         ts = int(ts or 0)
         for bucket, start in (("today", report.day_start_ms), ("month", report.month_start_ms)):
             if ts < start:
@@ -171,3 +185,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

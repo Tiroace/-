@@ -186,7 +186,8 @@ function emptyReport() {
     questions_to_ask: [],
     how_to_verify: [],
     // 一期不用大模型：版本字段叫 rules_version（引擎契约已改）
-    rules_version: 'v2.0',
+    // 留空而不是写死版本号，真实版本由引擎/后端返回，展示时不冒充某个版本
+    rules_version: '',
     pattern_db_version: '',
   };
 }
