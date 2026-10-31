@@ -50,7 +50,9 @@ class Settings:
     max_order_amount_fen: int = field(default_factory=lambda: _env_int("QBL_MAX_ORDER_AMOUNT_FEN", 30000))
 
     # 截图上传有效期（§8：分析完成 24 小时内删原图）
-    upload_ttl_hours: int = field(default_factory=lambda: _env_int("QBL_UPLOAD_TTL_HOURS", 24))
+    # 取 23 小时留余量：清理任务每小时跑一次、且以整点字符串比较，卡 24 会最坏拖到 25 小时才删，
+    # 承诺「24 小时内」就不成立了。见 DECISIONS D32 相关记录 / 合规 03 清单 B 组。
+    upload_ttl_hours: int = field(default_factory=lambda: _env_int("QBL_UPLOAD_TTL_HOURS", 23))
 
     # 报告保存期限（§8）：普通 7 天、会员 30 天
     report_ttl_days: int = 7

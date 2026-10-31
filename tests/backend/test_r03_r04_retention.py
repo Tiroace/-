@@ -24,6 +24,15 @@ def _boom(*_a, **_k):
 
 @pytest.fixture()
 def temp_db(monkeypatch, tmp_path):
+    """给本用例一个独立的库，并且**强制** retention 用它。
+
+    这里踩过两个坑（跨文件跑会红、单独跑却绿）：
+    1. `backend.app.retention` 是 `from .deps import get_db`，导入时就把函数对象绑死在模块
+       命名空间上；只把 `deps.get_db` 换成别的东西没用，必须替换 `retention.get_db` 本身。
+    2. `deps._db` 是进程级全局单例，前面任何一个测试文件建过 TestClient 就会留下一个指向
+       它自己临时目录的库，retention 无参 `get_db()` 拿到的是那个，不是这里建的。
+       所以这里既重置单例，又把 `retention.get_db` 直接钉死到本用例的 db 上，双保险。
+    """
     settings = Settings()
     settings.db_path = tmp_path / "r03.db"
     settings.upload_dir = tmp_path / "uploads"
@@ -34,6 +43,8 @@ def temp_db(monkeypatch, tmp_path):
     deps._db = None
     db = get_db(settings)
     db.init()
+    # 关键：retention 里用到的是自己模块命名空间里的 get_db，不是 deps.get_db
+    monkeypatch.setattr(retention, "get_db", lambda *a, **k: db, raising=False)
     with db.transaction() as conn:
         conn.execute(
             "INSERT OR IGNORE INTO users (id, platform, openid, created_at) VALUES (?,?,?,?)",
@@ -129,7 +140,32 @@ def test_过期报告也会被删(temp_db, tmp_path, monkeypatch):
         assert conn.execute("SELECT COUNT(*) AS c FROM reports").fetchone()["c"] == 0
 
 
-def test_日志落盘且按天轮转保留180天(tmp_path):
+def _drop_qbl_handlers() -> None:
+    """摘掉别的测试文件留下的 qbl 文件 handler。
+
+    `setup_logging()` 是「先挂上的赢」：任何先建过 TestClient 的文件（main.py 导入时就会调
+    setup_logging）都会在 root logger 上留一个指向它自己临时目录的 handler，于是这里再调
+    setup_logging(tmp_path) 会直接返回别人那个路径，日志写不进 tmp_path。
+    这是测试之间通过**进程级 logging 状态**串味，必须显式清理。
+    """
+    root = logging.getLogger()
+    for handler in list(root.handlers):
+        if getattr(handler, "_qbl_file_handler", False):
+            root.removeHandler(handler)
+            try:
+                handler.close()
+            except Exception:
+                pass
+
+
+@pytest.fixture()
+def clean_logging():
+    _drop_qbl_handlers()
+    yield
+    _drop_qbl_handlers()
+
+
+def test_日志落盘且按天轮转保留180天(tmp_path, clean_logging):
     log_path = setup_logging(tmp_path)
     logging.getLogger("qbl.r04").info("R04 write test")
     handler = next(h for h in logging.getLogger().handlers if getattr(h, "_qbl_file_handler", False))
@@ -138,11 +174,13 @@ def test_日志落盘且按天轮转保留180天(tmp_path):
 
     assert log_path.is_file(), "日志没落盘，进程一停就没了"
     assert "R04 write test" in log_path.read_text(encoding="utf-8")
-    assert handler.backupCount == RETENTION_DAYS == 180, "日志留存必须 ≥180 天（网络安全法要求 6 个月）"
+    # ≥180 天是下限；实际取 190，因为 backupCount=180 只能覆盖约 181 天，
+    # 而「六个月」按日历最长 184 天，181 不严格够。
+    assert handler.backupCount == RETENTION_DAYS >= 180, "日志留存必须 ≥180 天（网络安全法要求 6 个月）"
     assert handler.when.upper() == "MIDNIGHT", "应按天轮转"
 
 
-def test_重复初始化不会写两份日志(tmp_path):
+def test_重复初始化不会写两份日志(tmp_path, clean_logging):
     setup_logging(tmp_path)
     setup_logging(tmp_path)
     count = [h for h in logging.getLogger().handlers if getattr(h, "_qbl_file_handler", False)]

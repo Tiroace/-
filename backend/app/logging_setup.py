@@ -20,7 +20,11 @@ from pathlib import Path
 
 LOG_DIR_NAME = Path("var") / "log"
 LOG_FILE_NAME = "app.log"
-RETENTION_DAYS = 180
+# 保留 190 天，不是 180。
+# backupCount=180 只能保住当前文件 + 180 个备份 ≈ 181 天的覆盖，
+# 而「六个月」按日历算最长是 184 天（3–8 月：31+30+31+30+31+31），181 天不严格够。
+# 多留 10 天余量，保证任何六个月窗口的日志都还在。
+RETENTION_DAYS = 190
 LOG_FORMAT = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 _HANDLER_MARK = "_qbl_file_handler"
