@@ -293,7 +293,7 @@ export const EXAMPLE_REPORTS = {
     "how_to_verify": [
       "把岗位详情和 HR 聊天记录一起截图上传，判断更准"
     ],
-    "rules_version": "v2.0",
+    "rules_version": "v3.0",
     "pattern_db_version": "2026-10-30",
     "report_id": "SAMPLE-UNKNOWN"
   }
