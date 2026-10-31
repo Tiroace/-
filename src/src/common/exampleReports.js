@@ -1,6 +1,7 @@
 // 示例报告数据（由 src/scripts/gen-example-reports.py 生成，不要手改）
-// 来源：确定性引擎实际跑出的报告（版本号取 engine.prompts.RULES_VERSION），与真实引擎输出同构。
-// 用途：报告页 4 种 overall 形态展示与自测；内容是测试样本，不指向任何真实企业。
+// 来源：src/scripts/example-samples.json 的固定虚构样本，逐条跑确定性引擎得到。
+// 版本号取 engine/prompts.py 的 RULES_VERSION，与真实引擎输出同构。
+// 内容是虚构的，不指向任何公司。
 export const EXAMPLE_REPORTS = {
   "red": {
     "is_job_posting": true,
@@ -220,8 +221,8 @@ export const EXAMPLE_REPORTS = {
         "level": "green",
         "dimension": "company",
         "title": "公司写得全",
-        "evidence": "公司名称：青岛海联信息技术有限公司",
-        "context": "公司名称：青岛海联信息技术有限公司",
+        "evidence": "公司名称：青岛示例信息技术有限公司",
+        "context": "公司名称：青岛示例信息技术有限公司",
         "reason": "写了公司全称或地址，可以自己核实一下。",
         "source": "rule",
         "pattern_id": null,
@@ -255,7 +256,7 @@ export const EXAMPLE_REPORTS = {
     "report_id": "SAMPLE-GREEN"
   },
   "unknown": {
-    "is_job_posting": false,
+    "is_job_posting": true,
     "overall": "unknown",
     "summary": "信息不足，再补一张截图",
     "dimensions": [
@@ -292,10 +293,12 @@ export const EXAMPLE_REPORTS = {
     ],
     "findings": [],
     "questions_to_ask": [
-      "请上传包含岗位名称、薪资、工作内容的招聘截图"
+      "这个岗位的日常工作内容是什么？",
+      "工资结构和发薪时间怎么安排？"
     ],
     "how_to_verify": [
-      "把岗位详情和 HR 聊天记录一起截图上传，判断更准"
+      "到国家企业信用信息公示系统核对公司信息",
+      "面试地点选在公司办公场所，不去酒店或私人住所"
     ],
     "rules_version": "v3.0",
     "pattern_db_version": "2026-10-30",
