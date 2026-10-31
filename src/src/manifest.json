@@ -1,0 +1,33 @@
+{
+  "name": "面试请等等",
+  "appid": "",
+  "description": "把招聘截图发过来，30 秒告诉你这份工作有没有坑。报告仅供参考，不构成法律意见。",
+  "versionName": "2.0.0",
+  "versionCode": "200",
+  "transformPx": false,
+  "mp-weixin": {
+    "appid": "touristappid",
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "postcss": true,
+      "minified": true
+    },
+    "usingComponents": true,
+    "permission": {},
+    "requiredPrivateInfos": []
+  },
+  "mp-toutiao": {
+    "appid": "",
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "minified": true
+    },
+    "usingComponents": true
+  },
+  "uniStatistics": {
+    "enable": false
+  },
+  "vueVersion": "3"
+}

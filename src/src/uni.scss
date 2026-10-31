@@ -1,0 +1,83 @@
+// 面试请等等 · 设计变量（方案 A「夜间信号」）
+// 来自改版包 03-参考代码/design-tokens.scss，全量放进 uni.scss。
+// 页面里只用这里定义的变量，不写死色值（验收项）。
+// 设计稿按 390 宽；rpx = 设计稿 px × 750 ÷ 390（约 ×1.92）。
+
+// ---------- 颜色 ----------
+$bg: #0e1620; // 页面背景（pages.json 的 backgroundColor 也设成它，避免白屏闪烁）
+$surface: #17222e; // 卡片
+$surface-2: #1f2c3a; // 引用框、图标底
+$line: #263546; // 边框
+$divider: #22303f; // 卡片内分隔线
+$ink: #f1f4f6; // 主文字
+$ink-2: #93a3b1; // 次要文字
+$ink-3: #c5d0d8; // 解释正文
+$cta: #ffc93c; // 主按钮、品牌黄
+$cta-ink: #16120a; // 主按钮上的字
+$outline: #3a4b5c; // 次要按钮描边
+$brand-soft: rgba(255, 201, 60, 0.12);
+$brand-line: rgba(255, 201, 60, 0.35);
+$brand-text: #ffd978;
+$housing: #0a1017; // 信号灯底座、求助卡
+$housing-ink: #f1f4f6;
+$housing-ink-2: #8e9daa;
+$tab-bg: #121c27;
+$tab-off: #8090a0;
+$tab-on: #ffc93c;
+$hero-ink-2: #d9bdb8;
+
+// 风险灯：只用来表达结论，不做装饰
+$red: #ff5a47;
+$red-soft: rgba(255, 90, 71, 0.14);
+$red-text: #ff8c7d;
+$red-mark: rgba(255, 90, 71, 0.3);
+
+$amber: #ffb21e;
+$amber-soft: rgba(255, 178, 30, 0.14);
+$amber-text: #ffc861;
+$amber-mark: rgba(255, 178, 30, 0.3);
+
+$green: #34d07f;
+$green-soft: rgba(52, 208, 127, 0.14);
+$green-text: #6ee0a3;
+$green-mark: rgba(52, 208, 127, 0.28);
+
+$off: #3a4756; // 灰灯：截图里没提到
+$off-text: #8e9daa;
+
+// ---------- 字号（设计稿 px；页面里用 rpx，数值 = px × 1.92） ----------
+$fs-hero: 34px; // 首页大标题，900
+$fs-verdict: 28px; // 报告结论，900
+$fs-page: 26px; // 页面标题，900
+$fs-sheet: 22px; // 弹窗标题，900
+$fs-section: 17px; // 区块标题，800
+$fs-body: 15px; // 正文
+$fs-note: 13px; // 说明
+$fs-small: 12px; // 标签、辅助
+$fs-tab: 11px; // 底部导航
+
+// ---------- 圆角与间距（设计稿 px） ----------
+$radius-lg: 24px; // 大卡片
+$radius-md: 20px; // 普通卡片
+$radius-btn: 16px; // 主按钮
+$radius-sm: 14px; // 小按钮、引用框
+$radius-tag: 8px; // 标签
+$page-x: 20px; // 页面左右边距
+$btn-h: 56px; // 主按钮高
+$touch-min: 44px; // 最小点击区域
+
+// ---------- rpx 混入：设计稿 px → rpx（×1.92） ----------
+// 用法：@include rpx(margin-top, 28);
+@mixin rpx($prop, $px) {
+  #{$prop}: #{$px * 1.92}rpx;
+}
+
+// ---------- 信号灯光晕：只给灯用，卡片不加阴影 ----------
+@mixin lamp-glow($c) {
+  box-shadow: 0 0 22px $c;
+}
+
+// 灯 + 外圈柔光（设计稿里的写法：0 0 0 6px soft, 0 0 22px 灯色）
+@mixin lamp-glow-ring($c, $soft) {
+  box-shadow: 0 0 0 6px $soft, 0 0 22px $c;
+}

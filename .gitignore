@@ -1,0 +1,40 @@
+# ============ 依赖与构建产物 ============
+node_modules/
+src/dist/
+dist/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# ============ 运行时数据（本地库/缓存/报告输出，不提交）============
+var/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# ============ 密钥：仓库只放 .env.example ============
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+
+# ============ 未打码真实截图与原始抓取页面（单独加密存放，不进仓库）============
+data/testset/real_images/
+data/testset/raw/
+var/fetched/
+
+# ============ 迁移中的旧目录（改名完成后删除）============
+miniprogram/
+
+# ============ 系统与编辑器 ============
+Thumbs.db
+.DS_Store
+.idea/
+.vscode/
+*.log

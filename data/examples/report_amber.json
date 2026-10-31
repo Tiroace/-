@@ -1,0 +1,75 @@
+{
+  "is_job_posting": true,
+  "overall": "amber",
+  "summary": "有几处要问清楚再决定",
+  "dimensions": [
+    {
+      "key": "fee",
+      "level": "none",
+      "short": "没提到"
+    },
+    {
+      "key": "work",
+      "level": "none",
+      "short": "没提到"
+    },
+    {
+      "key": "title",
+      "level": "none",
+      "short": "没提到"
+    },
+    {
+      "key": "pay",
+      "level": "amber",
+      "short": "要问清"
+    },
+    {
+      "key": "company",
+      "level": "none",
+      "short": "没提到"
+    },
+    {
+      "key": "contract",
+      "level": "amber",
+      "short": "要问清"
+    }
+  ],
+  "findings": [
+    {
+      "level": "amber",
+      "dimension": "contract",
+      "title": "试用期超限",
+      "evidence": "合同期一年，试用期六个月",
+      "context": "合同期一年，试用期六个月",
+      "reason": "试用期长度可能超过法定上限，签合同前要核对合同期限。",
+      "source": "rule",
+      "pattern_id": null,
+      "rule_id": "R-PROBATION-01"
+    },
+    {
+      "level": "amber",
+      "dimension": "pay",
+      "title": "薪资跨度大",
+      "evidence": "试用期间工资 3000 元，转正后 3800 元",
+      "context": "试用期间工资 3000 元，转正后 3800 元",
+      "reason": "薪资区间跨度太大，大概率是拿最高值吸引人。",
+      "source": "pattern",
+      "pattern_id": "P-PAY-02",
+      "rule_id": null
+    }
+  ],
+  "questions_to_ask": [
+    "底薪是多少？提成怎么算？",
+    "试用期多久？合同签几年？社保从哪个月开始缴？",
+    "截图里没提到「收费与借贷」，可以问 HR：入职前需要我先交任何费用吗？",
+    "截图里没提到「工作内容」，可以问 HR：这个岗位每天具体做什么？有没有业绩考核？",
+    "截图里没提到「岗位名称」，可以问 HR：岗位名称和实际职责一致吗？",
+    "截图里没提到「公司信息」，可以问 HR：公司全称是什么？办公地址在哪里？"
+  ],
+  "how_to_verify": [
+    "要求书面写明底薪、绩效、补贴和发薪日",
+    "对照《劳动合同法》第十九条核对试用期；签合同前确认社保缴纳起始月"
+  ],
+  "prompt_version": "v2.0",
+  "pattern_db_version": "2026-10-30"
+}

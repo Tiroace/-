@@ -1,0 +1,67 @@
+{
+  "ws": "ws://127.0.0.1:9422",
+  "results": [
+    {
+      "name": "0-模拟器已加载新包(社区页存在)",
+      "ok": true,
+      "detail": "首页首屏节点可查询=true（若为 false，配合产品文案断言兜底）"
+    },
+    {
+      "name": "1-广场列表页可达",
+      "ok": true,
+      "detail": "route=pages/square/index"
+    },
+    {
+      "name": "2-广场列表结构(搜索/排序/发起求助)",
+      "ok": true,
+      "detail": "搜索 + 三种排序 + 发起求助 齐备"
+    },
+    {
+      "name": "3-广场页开关关闭时不崩溃",
+      "ok": true,
+      "detail": "页面未写死「暂未开放」文案；开关兜底依赖 404 探测，见第 4 条"
+    },
+    {
+      "name": "4-求助详情页可达",
+      "ok": true,
+      "detail": "route=pages/post/index"
+    },
+    {
+      "name": "5-详情页结构(投票/经历/举报/申诉)",
+      "ok": true,
+      "detail": "投票/经历/举报/申诉 齐备"
+    },
+    {
+      "name": "6-详情页用户分享免责说明",
+      "ok": true,
+      "detail": "含用户分享免责说明"
+    },
+    {
+      "name": "7-发起求助页可达",
+      "ok": true,
+      "detail": "route=pages/post-create/index"
+    },
+    {
+      "name": "8-发起求助页结构(关联记录/字数/匿名/勾选)",
+      "ok": true,
+      "detail": "关联记录/字数/匿名/勾选 齐备"
+    },
+    {
+      "name": "9-打码预览入口",
+      "ok": true,
+      "detail": "含打码/隐私相关入口"
+    },
+    {
+      "name": "10-无排行榜与黑名单入口",
+      "ok": true,
+      "detail": "无排行榜/黑名单/公司评分入口"
+    },
+    {
+      "name": "11-广场页截图取证",
+      "ok": true,
+      "detail": "截图 22696 bytes"
+    }
+  ],
+  "passed": 12,
+  "total": 12
+}

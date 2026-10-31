@@ -1,0 +1,46 @@
+{
+  "is_job_posting": false,
+  "overall": "unknown",
+  "summary": "信息不足，再补一张截图",
+  "dimensions": [
+    {
+      "key": "fee",
+      "level": "none",
+      "short": "没提到"
+    },
+    {
+      "key": "work",
+      "level": "none",
+      "short": "没提到"
+    },
+    {
+      "key": "title",
+      "level": "none",
+      "short": "没提到"
+    },
+    {
+      "key": "pay",
+      "level": "none",
+      "short": "没提到"
+    },
+    {
+      "key": "company",
+      "level": "none",
+      "short": "没提到"
+    },
+    {
+      "key": "contract",
+      "level": "none",
+      "short": "没提到"
+    }
+  ],
+  "findings": [],
+  "questions_to_ask": [
+    "请上传包含岗位名称、薪资、工作内容的招聘截图"
+  ],
+  "how_to_verify": [
+    "把岗位详情和 HR 聊天记录一起截图上传，判断更准"
+  ],
+  "prompt_version": "v2.0",
+  "pattern_db_version": "2026-10-30"
+}

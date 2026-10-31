@@ -1,0 +1,34 @@
+#!/bin/sh
+# 提交前密钥扫描：命中即拒绝提交。
+# 安装：git config core.hooksPath .githooks
+
+set -e
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$staged" ] && exit 0
+
+# 1) 禁止提交 .env / 私钥文件
+bad_files=$(echo "$staged" | grep -E '(^|/)\.env(\.|$)|\.pem$|\.key$|\.p12$|secrets/' || true)
+if [ -n "$bad_files" ]; then
+  echo "[pre-commit] 拒绝：以下文件疑似密钥/环境文件，不应进仓库：" >&2
+  echo "$bad_files" >&2
+  exit 1
+fi
+
+# 2) 扫描暂存内容里的密钥特征
+patterns='sk-[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]{10,}'
+hits=$(git diff --cached -U0 | grep -E '^\+' | grep -nE "$patterns" || true)
+if [ -n "$hits" ]; then
+  echo "[pre-commit] 拒绝：暂存内容里疑似包含密钥：" >&2
+  echo "$hits" | head -5 >&2
+  exit 1
+fi
+
+# 3) 警告级：明显口令赋值（不阻断，仅提示）
+warn=$(git diff --cached -U0 | grep -E '^\+' | grep -nE '(password|passwd|secret|token)[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']{6,}' | grep -viE 'change-me|example|placeholder|\*\*\*' || true)
+if [ -n "$warn" ]; then
+  echo "[pre-commit] 提示：以下行疑似硬编码口令，请确认是占位符：" >&2
+  echo "$warn" | head -5 >&2
+fi
+
+exit 0

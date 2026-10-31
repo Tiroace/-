@@ -1,0 +1,19 @@
+{
+  "description": "面试请等等 · 微信开发者工具自动化链路冒烟工程（不入包、仅本地测试）",
+  "appid": "touristappid",
+  "projectname": "miniapp-smoke",
+  "compileType": "src",
+  "libVersion": "3.6.4",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": false,
+    "postcss": true,
+    "minified": false,
+    "nodeModules": false,
+    "autoAudits": false,
+    "checkInvalidKey": true,
+    "uglifyFileName": false
+  },
+  "condition": {}
+}

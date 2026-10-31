@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>发起求助</title>
+<meta name="viewport" content="width=390">
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<div class="page" style="width: 390px; height: 1150px">
+  <header class="nav">
+    <a href="06-求助广场.html" aria-label="关闭"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg></a>
+    <span>发起求助</span>
+  </header>
+
+  <main class="main sub">
+    <h2 class="h2" style="margin-top: 8px; margin-bottom: 0">附上截图</h2>
+    <p class="page-sub" style="margin-top: 4px; font-size: 13px">求助必须带截图。发布前会先做一次 AI 检查，结果一起展示。</p>
+    <div class="card pick">
+      <span class="dot red" style="margin-top: 0" aria-hidden="true"></span>
+      <span class="grow"><span class="t">来自检查记录：这份工作，建议先别去</span><span class="s">2 张截图，今天 15:20 检查</span></span>
+      <a class="chg" href="#change">更换</a>
+    </div>
+    <div class="thumbs">
+      <div class="thumb"><span style="width: 70%"></span><span class="mask" style="width: 60%"></span><span style="width: 90%"></span><span style="width: 50%"></span><em>已打码</em></div>
+      <div class="thumb"><span style="width: 80%"></span><span style="width: 60%"></span><span class="mask" style="width: 75%"></span><span style="width: 85%"></span><em>已打码</em></div>
+    </div>
+    <p class="masknote">已自动打码：手机号 2 处、微信号 1 处、人名 1 处。点图片可以检查和补充打码。</p>
+
+    <div class="field">
+      <label for="co">公司名称</label>
+      <input id="co" type="text" value="某某网络科技有限公司">
+      <span class="from">从截图里识别，可以修改</span>
+    </div>
+    <div class="field">
+      <label for="pos">职位和城市</label>
+      <input id="pos" type="text" value="储备干部，杭州">
+    </div>
+    <div class="field">
+      <label for="ask">想问大家什么</label>
+      <textarea id="ask">面试时让交 300 元工装押金，说转正后退。HR 还说名额不多，让我今天就交。这个能去吗？</textarea>
+      <span class="count">46 / 200</span>
+    </div>
+    <p class="hint">写你遇到的事实，比如「让交 300 元押金」，不写「骗子」「黑心」这类结论。含敏感词或人身攻击的内容不会通过审核。</p>
+
+    <label class="check"><input type="checkbox" checked><span>匿名发布，显示为「求职者 8F2A」</span></label>
+    <label class="check"><input type="checkbox"><span>我确认内容是自己的真实经历，并已阅读<a href="#rules">《社区规范》</a></span></label>
+  </main>
+
+  <div class="paybar">
+    <button class="btn btn-primary" type="button">提交审核</button>
+    <p>审核通过后公开，一般几分钟内完成</p>
+  </div>
+</div>
+</body>
+</html>

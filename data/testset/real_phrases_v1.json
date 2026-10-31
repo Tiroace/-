@@ -1,0 +1,505 @@
+{
+  "version": "v1.1",
+  "collected_at": "2026-10-31",
+  "collector": "软件测试者（经 Tabbit 浏览器通道抓取）",
+  "purpose": "真实轨道评测素材：仅内部使用，不对外展示、不放进产品、不转发原图",
+  "red_line": "路线令第四节：不批量爬取、不绕登录、不用他人账号、真实/合成分开标注",
+  "sources": [
+    {
+      "id": "A2",
+      "name": "央视新闻",
+      "title": "发布虚假招聘信息为「求职类诈骗」引流 10 人被刑拘",
+      "url": "https://news.cctv.com/2026/08/29/ARTIGiSog7sGvgayIxIeN0Gq260829.shtml",
+      "status": "fetched"
+    },
+    {
+      "id": "A3",
+      "name": "法治网/人民日报",
+      "title": "一批虚假招聘、非法职介等典型案例公布",
+      "url": "https://fazhi.youth.cn/xwk/202605/t20260525_16679275.html",
+      "status": "fetched"
+    },
+    {
+      "id": "A4",
+      "name": "腾讯新闻（转成都通报）",
+      "title": "成都通报一批典型案例，「招转培」「套路聘」行为被严惩",
+      "url": "https://news.qq.com/rain/a/20260617A05J0J00",
+      "status": "fetched"
+    },
+    {
+      "id": "A5",
+      "name": "搜狐（转官方通报）",
+      "title": "官方通报 4 起人力资源市场典型违法案例",
+      "url": "https://www.sohu.com/a/1077852802_122104167",
+      "status": "fetched"
+    },
+    {
+      "id": "A6",
+      "name": "腾讯新闻（转大连公安）",
+      "title": "警惕「招聘辅警」诈骗",
+      "url": "https://news.qq.com/rain/a/20260818A06HOQ00",
+      "status": "fetched"
+    },
+    {
+      "id": "A1",
+      "name": "公安部网站",
+      "title": "三部门发布求职招聘十个典型陷阱防范提示",
+      "url": "https://www.mps.gov.cn/n2253534/n2253543/c9075076/content.html",
+      "status": "unreachable_521",
+      "note": "站点返回 521，改用转载版本替代；十类陷阱话术待补"
+    }
+  ],
+  "phrases": [
+    {
+      "id": "P001",
+      "dimension": "fee",
+      "level": "red",
+      "text": "可在国家电网、部队文职、三甲医院等单位安排工作",
+      "source": "A2",
+      "category": "虚假岗位承诺",
+      "why": "国家电网、部队文职、三甲医院都是需要公开招考的单位，不存在「安排」渠道"
+    },
+    {
+      "id": "P002",
+      "dimension": "fee",
+      "level": "red",
+      "text": "分批次收取高额就业介绍费用",
+      "source": "A2",
+      "category": "前置收费",
+      "why": "正规单位不会收就业介绍费"
+    },
+    {
+      "id": "P003",
+      "dimension": "fee",
+      "level": "red",
+      "text": "入职前任何费用一律拒绝",
+      "source": "A2",
+      "category": "警示语（反例）",
+      "why": "这是官方提示，不是招聘话术；收录用于让规则识别「防骗提示」本身"
+    },
+    {
+      "id": "P004",
+      "dimension": "contract",
+      "level": "red",
+      "text": "诱导其签订《新媒体运营实训咨询服务协议》，并收取实训费用1.88万元",
+      "source": "A3",
+      "category": "招转培",
+      "why": "以入职为由让人签培训协议并收费，典型招转培"
+    },
+    {
+      "id": "P005",
+      "dimension": "fee",
+      "level": "red",
+      "text": "诱导其在某小贷平台办理分期贷款，每月需偿还1777元",
+      "source": "A3",
+      "category": "培训贷",
+      "why": "以贷款支付培训费，是培训贷的核心特征"
+    },
+    {
+      "id": "P006",
+      "dimension": "fee",
+      "level": "red",
+      "text": "先付费培训或购买课程才能入职",
+      "source": "A3",
+      "category": "招转培",
+      "why": "入职前付费培训是招转培标志"
+    },
+    {
+      "id": "P007",
+      "dimension": "company",
+      "level": "red",
+      "text": "打着「国企内推」「保录直签」等旗号",
+      "source": "A3",
+      "category": "虚假承诺",
+      "why": "正规国企招聘不存在「保录直签」"
+    },
+    {
+      "id": "P008",
+      "dimension": "company",
+      "level": "red",
+      "text": "高薪保录、直签国企",
+      "source": "A3",
+      "category": "虚假承诺",
+      "why": "同上，且涉及虚假招聘"
+    },
+    {
+      "id": "P009",
+      "dimension": "company",
+      "level": "red",
+      "text": "向求职者明示或暗示「有关系」「送钱就能入职」",
+      "source": "A3",
+      "category": "虚假承诺",
+      "why": "收钱办事是诈骗话术"
+    },
+    {
+      "id": "P010",
+      "dimension": "contract",
+      "level": "amber",
+      "text": "口头承诺支付每月薪资8000元，但未签订书面劳动合同",
+      "source": "A3",
+      "category": "不签合同",
+      "why": "只口头承诺不签合同，后续无法维权"
+    },
+    {
+      "id": "P011",
+      "dimension": "pay",
+      "level": "red",
+      "text": "以「月工资8000元至12000元」高薪招聘员工为噱头",
+      "source": "A4",
+      "category": "高薪诱饵",
+      "why": "高薪只是引流噱头，与实际岗位不符"
+    },
+    {
+      "id": "P012",
+      "dimension": "fee",
+      "level": "red",
+      "text": "使用固定话术引诱求职者签订培训协议，并办理高额利息的消费贷款作为「培训费」",
+      "source": "A4",
+      "category": "培训贷",
+      "why": "培训费通过高息消费贷支付，是培训贷的完整链路"
+    },
+    {
+      "id": "P013",
+      "dimension": "work",
+      "level": "red",
+      "text": "将求职者推送到与招聘描述严重不符的岗位入职",
+      "source": "A4",
+      "category": "岗位不符",
+      "why": "招聘描述与实际岗位严重不符"
+    },
+    {
+      "id": "P014",
+      "dimension": "contract",
+      "level": "red",
+      "text": "要求求职者签署声明以规避前期诱导贷款的违法事实",
+      "source": "A4",
+      "category": "规避责任",
+      "why": "让求职者签声明「自愿贷款」，是转移责任"
+    },
+    {
+      "id": "P015",
+      "dimension": "work",
+      "level": "red",
+      "text": "以「已招满」为由，诱导求职者前往省外务工",
+      "source": "A4",
+      "category": "引流转地",
+      "why": "本地招满推外地，是套路聘常见话术"
+    },
+    {
+      "id": "P016",
+      "dimension": "work",
+      "level": "red",
+      "text": "本地岗位已满、推荐外地高薪岗位",
+      "source": "A4",
+      "category": "引流转地",
+      "why": "官方点名的警惕话术"
+    },
+    {
+      "id": "P017",
+      "dimension": "fee",
+      "level": "red",
+      "text": "诱导求职者签订《实训带教协议》，约定违反指定条款不退还已缴费用",
+      "source": "A4",
+      "category": "格式条款",
+      "why": "以不公平格式条款加重求职者责任"
+    },
+    {
+      "id": "P018",
+      "dimension": "pay",
+      "level": "red",
+      "text": "不负责装卸、不租车卖车、不收取费用，综合月收入9500元至13500元",
+      "source": "A4",
+      "category": "招转租",
+      "why": "先承诺不租车，再诱导签租车合同收押金"
+    },
+    {
+      "id": "P019",
+      "dimension": "fee",
+      "level": "red",
+      "text": "以「高收入」诱导求职者签订《车辆租车承包合同》并收取押金",
+      "source": "A4",
+      "category": "招转租",
+      "why": "租车押金是招转租的核心变现方式"
+    },
+    {
+      "id": "P020",
+      "dimension": "fee",
+      "level": "red",
+      "text": "以资料管理费、体检费、岗位安置费等名目收取各类费用",
+      "source": "A5",
+      "category": "多名义收费",
+      "why": "名目繁多的前置收费"
+    },
+    {
+      "id": "P021",
+      "dimension": "work",
+      "level": "red",
+      "text": "求职者缴费后，随意安排与应聘岗位严重不符的工作",
+      "source": "A5",
+      "category": "岗位不符",
+      "why": "收钱后岗位与描述严重不符"
+    },
+    {
+      "id": "P022",
+      "dimension": "company",
+      "level": "red",
+      "text": "假借国企内部岗位、付费内推噱头，与求职者签订服务协议、收取高额中介费用",
+      "source": "A5",
+      "category": "付费内推",
+      "why": "付费内推是常见骗局"
+    },
+    {
+      "id": "P023",
+      "dimension": "pay",
+      "level": "red",
+      "text": "无经验骑手、月入9000元",
+      "source": "A5",
+      "category": "高薪诱饵",
+      "why": "无门槛高薪是引流话术"
+    },
+    {
+      "id": "P024",
+      "dimension": "company",
+      "level": "red",
+      "text": "冒用用工企业名义发布招聘信息，公示用工主体与实际用工主体完全不符",
+      "source": "A5",
+      "category": "冒名招聘",
+      "why": "冒用他人名义招聘，主体不符"
+    },
+    {
+      "id": "P025",
+      "dimension": "contract",
+      "level": "red",
+      "text": "以岗前培训考核、适应性试岗为名，违法设定3至7天的无薪试岗期",
+      "source": "A3",
+      "category": "无薪试岗",
+      "why": "无薪试岗违法，试岗期满以考核不合格辞退"
+    },
+    {
+      "id": "P026",
+      "dimension": "contract",
+      "level": "amber",
+      "text": "试岗期满后以考核不合格、不适应岗位等理由辞退，拒不支付试岗期间的劳动报酬",
+      "source": "A3",
+      "category": "无薪试岗",
+      "why": "白用劳动力后辞退"
+    },
+    {
+      "id": "P027",
+      "dimension": "company",
+      "level": "amber",
+      "text": "要求提前缴纳费用、频繁变更面试地点",
+      "source": "A3",
+      "category": "警示语（反例）",
+      "why": "官方提示的警惕特征"
+    },
+    {
+      "id": "P028",
+      "dimension": "company",
+      "level": "red",
+      "text": "地址模糊、无固定办公地点、不敢实地面试",
+      "source": "A2",
+      "category": "警示语（反例）",
+      "why": "公司信息不透明的典型表现"
+    },
+    {
+      "id": "P029",
+      "dimension": "contract",
+      "level": "amber",
+      "text": "拒绝空白合同、不合理霸王条款",
+      "source": "A2",
+      "category": "警示语（反例）",
+      "why": "空白合同与霸王条款的特征"
+    },
+    {
+      "id": "P030",
+      "dimension": "title",
+      "level": "amber",
+      "text": "提供特定户籍、特定地域、某少数民族名额已满等说辞",
+      "source": "A3",
+      "category": "就业歧视",
+      "why": "以户籍/民族限制为借口的就业歧视"
+    },
+    {
+      "id": "P031",
+      "dimension": "fee",
+      "level": "red",
+      "text": "通过微信视频号发布部分央国企招聘信息，并收取高额求职指导费",
+      "source": "A4",
+      "category": "付费内推",
+      "why": "无资质收取求职指导费，属非法职介"
+    },
+    {
+      "id": "P032",
+      "dimension": "company",
+      "level": "red",
+      "text": "央国企就业指导、内部渠道",
+      "source": "A4",
+      "category": "虚假渠道",
+      "why": "官方点名提醒：所谓内部渠道多为骗局"
+    },
+    {
+      "id": "P033",
+      "dimension": "work",
+      "level": "red",
+      "text": "以物流公司高薪招聘司机为诱饵，诱使求职者贷款租车购车",
+      "source": "A4",
+      "category": "招转租",
+      "why": "以招聘为名诱导贷款买车租车"
+    },
+    {
+      "id": "P034",
+      "dimension": "pay",
+      "level": "red",
+      "text": "综合月收入9500元至13500元",
+      "source": "A4",
+      "category": "高薪诱饵",
+      "why": "高薪承诺配合租车押金，是招转租典型组合"
+    },
+    {
+      "id": "P035",
+      "dimension": "fee",
+      "level": "red",
+      "text": "通过网络平台绑定自动扣款",
+      "source": "A4",
+      "category": "变相收费",
+      "why": "绑卡自动扣款比收押金更隐蔽"
+    },
+    {
+      "id": "P036",
+      "dimension": "fee",
+      "level": "red",
+      "text": "凡是提前收取体检费、安置费、资料费、中介费的",
+      "source": "A5",
+      "category": "前置收费（官方警示）",
+      "why": "官方明确列为需警惕的收费名目"
+    },
+    {
+      "id": "P037",
+      "dimension": "company",
+      "level": "red",
+      "text": "零门槛、高薪保底、国企内推、包入职",
+      "source": "A5",
+      "category": "虚假承诺",
+      "why": "官方点名的四类虚假噱头"
+    },
+    {
+      "id": "P038",
+      "dimension": "company",
+      "level": "amber",
+      "text": "超高薪资、特殊渠道招聘大概率为骗局",
+      "source": "A5",
+      "category": "警示语（反例）",
+      "why": "官方提示"
+    },
+    {
+      "id": "P039",
+      "dimension": "company",
+      "level": "red",
+      "text": "冒用他人名义招聘、发布虚假岗位信息、欺诈收费牟利",
+      "source": "A5",
+      "category": "冒名招聘",
+      "why": "冒名+欺诈收费组合"
+    },
+    {
+      "id": "P040",
+      "dimension": "title",
+      "level": "amber",
+      "text": "无经验骑手、月入9000元",
+      "source": "A5",
+      "category": "高薪诱饵",
+      "why": "无门槛高薪"
+    },
+    {
+      "id": "P041",
+      "dimension": "fee",
+      "level": "red",
+      "text": "按每人500元的标准收取人员推荐服务费",
+      "source": "A5",
+      "category": "变相收费",
+      "why": "向合作方收费并转嫁成本"
+    },
+    {
+      "id": "P042",
+      "dimension": "title",
+      "level": "red",
+      "text": "将某安保公司招聘保安的信息虚构为招聘公安辅警",
+      "source": "A6",
+      "category": "岗位造假",
+      "why": "把保安岗包装成公安辅警，冒充公职"
+    },
+    {
+      "id": "P043",
+      "dimension": "company",
+      "level": "red",
+      "text": "3个月转正、与公安机关直签合同",
+      "source": "A6",
+      "category": "虚假承诺",
+      "why": "伪造与公安机关直签的承诺"
+    },
+    {
+      "id": "P044",
+      "dimension": "fee",
+      "level": "red",
+      "text": "共有3人报名并交纳保证金共计2万元",
+      "source": "A6",
+      "category": "前置收费",
+      "why": "以报名名义收保证金"
+    },
+    {
+      "id": "P045",
+      "dimension": "company",
+      "level": "red",
+      "text": "通过微信群、朋友圈发布相关虚假招聘信息",
+      "source": "A6",
+      "category": "传播渠道",
+      "why": "非正规渠道发布，无法核实"
+    },
+    {
+      "id": "P046",
+      "dimension": "contract",
+      "level": "amber",
+      "text": "报考人员均需通过报名、资格审查、笔试、体能测试、心理素质测试、面试、体检、考察、公示等环节",
+      "source": "A6",
+      "category": "正规流程（反例）",
+      "why": "正规公职招聘必有完整流程，可用来识别「免试直签」"
+    },
+    {
+      "id": "P047",
+      "dimension": "contract",
+      "level": "red",
+      "text": "利用求职者急于就业的心理，以岗前培训考核、适应性试岗为名",
+      "source": "A3",
+      "category": "无薪试岗",
+      "why": "利用求职焦虑设置无薪期"
+    },
+    {
+      "id": "P048",
+      "dimension": "fee",
+      "level": "red",
+      "text": "以发布招聘信息名义，向合作单位收取200元至700元不等的广告费、信息推广费",
+      "source": "A3",
+      "category": "变相收费",
+      "why": "无许可证从事职业中介并收费"
+    },
+    {
+      "id": "P049",
+      "dimension": "title",
+      "level": "amber",
+      "text": "以特定户籍、特定地域、某少数民族名额已满等说辞",
+      "source": "A3",
+      "category": "就业歧视",
+      "why": "以户籍民族为由的就业歧视"
+    },
+    {
+      "id": "P050",
+      "dimension": "pay",
+      "level": "amber",
+      "text": "口头承诺支付每月薪资8000元，但未签订书面劳动合同",
+      "source": "A3",
+      "category": "口头承诺",
+      "why": "只口头承诺不签合同，维权无据"
+    }
+  ],
+  "note": "话术逐字摘自 A2/A3/A4/A5/A6 正文，可在 var/fetched/fetch-a2a6.json 回查；A1 公安部站点 521 不可达，十个陷阱话术待补"
+}

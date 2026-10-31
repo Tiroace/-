@@ -1,0 +1,62 @@
+{
+  "schema_version": "v2",
+  "generated_by": "scripts/gen_examples.py",
+  "items": [
+    {
+      "overall": "red",
+      "file": "data/examples/report_red.json",
+      "description": "红：入职前收押金 + 服装费（data/testset/ocr/T002.txt）",
+      "dimensions": {
+        "fee": "red",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "none",
+        "contract": "none"
+      },
+      "findings": 4
+    },
+    {
+      "overall": "amber",
+      "file": "data/examples/report_amber.json",
+      "description": "黄：合同一年试用期六个月（data/testset/ocr/T012.txt）",
+      "dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "amber",
+        "company": "none",
+        "contract": "amber"
+      },
+      "findings": 2
+    },
+    {
+      "overall": "green",
+      "file": "data/examples/report_green.json",
+      "description": "绿：正常的后端开发岗位（data/testset/ocr/T015.txt）",
+      "dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "green",
+        "contract": "none"
+      },
+      "findings": 2
+    },
+    {
+      "overall": "unknown",
+      "file": "data/examples/report_unknown.json",
+      "description": "灰（信息不足）：非招聘内容，模拟用户传错图",
+      "dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "none",
+        "company": "none",
+        "contract": "none"
+      },
+      "findings": 0
+    }
+  ]
+}

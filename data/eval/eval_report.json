@@ -1,0 +1,1077 @@
+{
+  "generated_at": "2026-10-31 18:06:14",
+  "schema_version": "v2",
+  "engine_mode": "rules",
+  "model": null,
+  "lexicon_version": "3.2",
+  "variants_version": "v1.0",
+  "pattern_db_version": "2026-10-30",
+  "pattern_count": 50,
+  "testset": "D:\\qiuzhibilei\\data\\testset\\index.jsonl",
+  "sample_count": 20,
+  "failure_count": 0,
+  "failures": [],
+  "metrics": {
+    "overall_exact": 1.0,
+    "red_recall": 1.0,
+    "green_false_red": 0.0,
+    "amber_alarm": 1.0,
+    "dimension_accuracy": 0.925,
+    "dimension_checked": 120,
+    "dimension_hit": 111,
+    "pattern_recall": 0.0,
+    "pattern_precision": 0.0,
+    "pattern_hit": 0,
+    "pattern_total": 0,
+    "evidence_traceable": 1.0,
+    "context_consistent": 1.0,
+    "pii_leaks": 0,
+    "grey_question_rate": 1.0,
+    "avg_ms": 14.71,
+    "p95_ms": 23.8,
+    "schema_pass_rate": 1.0,
+    "findings_dropped_total": 0,
+    "calibration_adjust_total": 0,
+    "model_retry_cases": 0,
+    "level_dist": {
+      "red": 7,
+      "amber": 7,
+      "green": 6,
+      "unknown": 0
+    }
+  },
+  "gate": {
+    "red_recall": "pass",
+    "green_false_red": "pass",
+    "evidence_traceable": "pass",
+    "context_consistent": "pass",
+    "pii_zero_leak": "pass",
+    "dimension_accuracy": "pass",
+    "pattern_recall": "skip",
+    "schema": "pass"
+  },
+  "thresholds": {
+    "red_recall": 0.9,
+    "green_false_red": 0.05,
+    "evidence_traceable": 1.0,
+    "context_consistent": 1.0,
+    "pii_leaks": 0,
+    "dimension_accuracy": 0.8,
+    "pattern_recall": 0.6,
+    "avg_ms": 30000
+  },
+  "cases": [
+    {
+      "id": "S0001",
+      "gt_overall": "red",
+      "pred_overall": "red",
+      "gt_dimensions": {
+        "fee": "red",
+        "work": "red",
+        "title": "none",
+        "pay": "none",
+        "company": "none",
+        "contract": "none"
+      },
+      "pred_dimensions": {
+        "fee": "red",
+        "work": "red",
+        "title": "none",
+        "pay": "none",
+        "company": "none",
+        "contract": "none"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 6,
+      "dimension_wrong": [],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-FEE-05",
+        "P-PAY-04",
+        "P-WORK-02",
+        "P-WORK-04"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-FEE-05",
+        "P-PAY-04",
+        "P-WORK-02",
+        "P-WORK-04"
+      ],
+      "findings": 4,
+      "latency_ms": 26.12,
+      "untraceable": [],
+      "grey_keys": [
+        "title",
+        "pay",
+        "company",
+        "contract"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0002",
+      "gt_overall": "red",
+      "pred_overall": "red",
+      "gt_dimensions": {
+        "fee": "red",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "none",
+        "contract": "none"
+      },
+      "pred_dimensions": {
+        "fee": "red",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "none",
+        "contract": "none"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 6,
+      "dimension_wrong": [],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-FEE-01",
+        "P-FEE-02",
+        "P-FEE-06",
+        "P-FEE-09",
+        "P-PAY-02"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-FEE-01",
+        "P-FEE-02",
+        "P-FEE-06",
+        "P-FEE-09",
+        "P-PAY-02"
+      ],
+      "findings": 4,
+      "latency_ms": 17.71,
+      "untraceable": [],
+      "grey_keys": [
+        "work",
+        "title",
+        "company",
+        "contract"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0003",
+      "gt_overall": "red",
+      "pred_overall": "red",
+      "gt_dimensions": {
+        "fee": "red",
+        "work": "amber",
+        "title": "none",
+        "pay": "none",
+        "company": "none",
+        "contract": "none"
+      },
+      "pred_dimensions": {
+        "fee": "red",
+        "work": "none",
+        "title": "none",
+        "pay": "none",
+        "company": "none",
+        "contract": "none"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 5,
+      "dimension_wrong": [
+        {
+          "dimension": "work",
+          "gt": "amber",
+          "pred": "none"
+        }
+      ],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-FEE-04"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-FEE-04"
+      ],
+      "findings": 2,
+      "latency_ms": 14.04,
+      "untraceable": [],
+      "grey_keys": [
+        "work",
+        "title",
+        "pay",
+        "company",
+        "contract"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0004",
+      "gt_overall": "red",
+      "pred_overall": "red",
+      "gt_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "red",
+        "company": "amber",
+        "contract": "none"
+      },
+      "pred_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "red",
+        "company": "none",
+        "contract": "none"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 5,
+      "dimension_wrong": [
+        {
+          "dimension": "company",
+          "gt": "amber",
+          "pred": "none"
+        }
+      ],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-OVERSEAS-01"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-OVERSEAS-01"
+      ],
+      "findings": 1,
+      "latency_ms": 10.92,
+      "untraceable": [],
+      "grey_keys": [
+        "fee",
+        "work",
+        "title",
+        "company",
+        "contract"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0005",
+      "gt_overall": "red",
+      "pred_overall": "red",
+      "gt_dimensions": {
+        "fee": "red",
+        "work": "red",
+        "title": "none",
+        "pay": "none",
+        "company": "none",
+        "contract": "none"
+      },
+      "pred_dimensions": {
+        "fee": "red",
+        "work": "red",
+        "title": "none",
+        "pay": "amber",
+        "company": "none",
+        "contract": "none"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 5,
+      "dimension_wrong": [
+        {
+          "dimension": "pay",
+          "gt": "none",
+          "pred": "amber"
+        }
+      ],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-WORK-01"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-WORK-01"
+      ],
+      "findings": 3,
+      "latency_ms": 15.47,
+      "untraceable": [],
+      "grey_keys": [
+        "title",
+        "company",
+        "contract"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0006",
+      "gt_overall": "red",
+      "pred_overall": "red",
+      "gt_dimensions": {
+        "fee": "red",
+        "work": "none",
+        "title": "none",
+        "pay": "none",
+        "company": "none",
+        "contract": "none"
+      },
+      "pred_dimensions": {
+        "fee": "red",
+        "work": "none",
+        "title": "none",
+        "pay": "none",
+        "company": "none",
+        "contract": "none"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 6,
+      "dimension_wrong": [],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-FEE-03"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-FEE-03"
+      ],
+      "findings": 2,
+      "latency_ms": 12.57,
+      "untraceable": [],
+      "grey_keys": [
+        "work",
+        "title",
+        "pay",
+        "company",
+        "contract"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0007",
+      "gt_overall": "red",
+      "pred_overall": "red",
+      "gt_dimensions": {
+        "fee": "red",
+        "work": "amber",
+        "title": "none",
+        "pay": "none",
+        "company": "none",
+        "contract": "none"
+      },
+      "pred_dimensions": {
+        "fee": "red",
+        "work": "amber",
+        "title": "none",
+        "pay": "amber",
+        "company": "none",
+        "contract": "none"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 5,
+      "dimension_wrong": [
+        {
+          "dimension": "pay",
+          "gt": "none",
+          "pred": "amber"
+        }
+      ],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-PAY-04",
+        "P-WORK-05"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-PAY-04",
+        "P-WORK-05"
+      ],
+      "findings": 4,
+      "latency_ms": 20.47,
+      "untraceable": [],
+      "grey_keys": [
+        "title",
+        "company",
+        "contract"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0008",
+      "gt_overall": "amber",
+      "pred_overall": "amber",
+      "gt_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "amber",
+        "pay": "amber",
+        "company": "green",
+        "contract": "none"
+      },
+      "pred_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "amber",
+        "company": "green",
+        "contract": "none"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 5,
+      "dimension_wrong": [
+        {
+          "dimension": "title",
+          "gt": "amber",
+          "pred": "none"
+        }
+      ],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-PAY-02",
+        "P-PAY-03",
+        "P-TITLE-01"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-PAY-02",
+        "P-PAY-03",
+        "P-TITLE-01"
+      ],
+      "findings": 2,
+      "latency_ms": 12.87,
+      "untraceable": [],
+      "grey_keys": [
+        "fee",
+        "work",
+        "title",
+        "contract"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0009",
+      "gt_overall": "amber",
+      "pred_overall": "amber",
+      "gt_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "amber",
+        "pay": "amber",
+        "company": "none",
+        "contract": "amber"
+      },
+      "pred_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "amber",
+        "company": "none",
+        "contract": "none"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 4,
+      "dimension_wrong": [
+        {
+          "dimension": "title",
+          "gt": "amber",
+          "pred": "none"
+        },
+        {
+          "dimension": "contract",
+          "gt": "amber",
+          "pred": "none"
+        }
+      ],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-PAY-05",
+        "P-TITLE-01",
+        "P-TITLE-04",
+        "P-WORK-06"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-PAY-05",
+        "P-TITLE-01",
+        "P-TITLE-04",
+        "P-WORK-06"
+      ],
+      "findings": 2,
+      "latency_ms": 10.69,
+      "untraceable": [],
+      "grey_keys": [
+        "fee",
+        "work",
+        "title",
+        "company",
+        "contract"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0010",
+      "gt_overall": "amber",
+      "pred_overall": "amber",
+      "gt_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "amber",
+        "company": "none",
+        "contract": "none"
+      },
+      "pred_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "amber",
+        "company": "green",
+        "contract": "none"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 5,
+      "dimension_wrong": [
+        {
+          "dimension": "company",
+          "gt": "none",
+          "pred": "green"
+        }
+      ],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-PAY-01",
+        "P-PAY-02"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-PAY-01",
+        "P-PAY-02"
+      ],
+      "findings": 2,
+      "latency_ms": 11.5,
+      "untraceable": [],
+      "grey_keys": [
+        "fee",
+        "work",
+        "title",
+        "contract"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0011",
+      "gt_overall": "amber",
+      "pred_overall": "amber",
+      "gt_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "amber",
+        "company": "none",
+        "contract": "none"
+      },
+      "pred_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "amber",
+        "company": "none",
+        "contract": "none"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 6,
+      "dimension_wrong": [],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-PAY-02",
+        "P-PAY-03",
+        "P-PAY-06"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-PAY-02",
+        "P-PAY-03",
+        "P-PAY-06"
+      ],
+      "findings": 1,
+      "latency_ms": 9.33,
+      "untraceable": [],
+      "grey_keys": [
+        "fee",
+        "work",
+        "title",
+        "company",
+        "contract"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0012",
+      "gt_overall": "amber",
+      "pred_overall": "amber",
+      "gt_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "none",
+        "company": "none",
+        "contract": "amber"
+      },
+      "pred_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "none",
+        "company": "none",
+        "contract": "amber"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 6,
+      "dimension_wrong": [],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-CONTRACT-03",
+        "P-PAY-02"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-CONTRACT-03",
+        "P-PAY-02"
+      ],
+      "findings": 1,
+      "latency_ms": 14.02,
+      "untraceable": [],
+      "grey_keys": [
+        "fee",
+        "work",
+        "title",
+        "pay",
+        "company"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0013",
+      "gt_overall": "amber",
+      "pred_overall": "amber",
+      "gt_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "none",
+        "company": "none",
+        "contract": "amber"
+      },
+      "pred_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "none",
+        "company": "none",
+        "contract": "amber"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 6,
+      "dimension_wrong": [],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-CONTRACT-01"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-CONTRACT-01"
+      ],
+      "findings": 1,
+      "latency_ms": 11.39,
+      "untraceable": [],
+      "grey_keys": [
+        "fee",
+        "work",
+        "title",
+        "pay",
+        "company"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0014",
+      "gt_overall": "amber",
+      "pred_overall": "amber",
+      "gt_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "none",
+        "contract": "amber"
+      },
+      "pred_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "none",
+        "contract": "amber"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 6,
+      "dimension_wrong": [],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-CONTRACT-02",
+        "P-CONTRACT-03",
+        "P-CONTRACT-06",
+        "P-PAY-02"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-CONTRACT-02",
+        "P-CONTRACT-03",
+        "P-CONTRACT-06",
+        "P-PAY-02"
+      ],
+      "findings": 2,
+      "latency_ms": 14.8,
+      "untraceable": [],
+      "grey_keys": [
+        "fee",
+        "work",
+        "title",
+        "company"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0015",
+      "gt_overall": "green",
+      "pred_overall": "green",
+      "gt_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "green",
+        "contract": "none"
+      },
+      "pred_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "green",
+        "contract": "none"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 6,
+      "dimension_wrong": [],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-PAY-02"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-PAY-02"
+      ],
+      "findings": 2,
+      "latency_ms": 23.8,
+      "untraceable": [],
+      "grey_keys": [
+        "fee",
+        "work",
+        "title",
+        "contract"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0016",
+      "gt_overall": "green",
+      "pred_overall": "green",
+      "gt_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "green",
+        "contract": "none"
+      },
+      "pred_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "green",
+        "contract": "none"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 6,
+      "dimension_wrong": [],
+      "gt_patterns": [],
+      "pred_patterns": [],
+      "pattern_hit": 0,
+      "patterns_extra": [],
+      "findings": 2,
+      "latency_ms": 15.04,
+      "untraceable": [],
+      "grey_keys": [
+        "fee",
+        "work",
+        "title",
+        "contract"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0017",
+      "gt_overall": "green",
+      "pred_overall": "green",
+      "gt_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "none",
+        "contract": "green"
+      },
+      "pred_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "none",
+        "contract": "green"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 6,
+      "dimension_wrong": [],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-PAY-02"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-PAY-02"
+      ],
+      "findings": 2,
+      "latency_ms": 15.0,
+      "untraceable": [],
+      "grey_keys": [
+        "fee",
+        "work",
+        "title",
+        "company"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0018",
+      "gt_overall": "green",
+      "pred_overall": "green",
+      "gt_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "none",
+        "contract": "none"
+      },
+      "pred_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "none",
+        "contract": "none"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 6,
+      "dimension_wrong": [],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-PAY-02"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-PAY-02"
+      ],
+      "findings": 1,
+      "latency_ms": 14.18,
+      "untraceable": [],
+      "grey_keys": [
+        "fee",
+        "work",
+        "title",
+        "company",
+        "contract"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0019",
+      "gt_overall": "green",
+      "pred_overall": "green",
+      "gt_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "green",
+        "contract": "none"
+      },
+      "pred_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "green",
+        "contract": "none"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 6,
+      "dimension_wrong": [],
+      "gt_patterns": [],
+      "pred_patterns": [
+        "P-PAY-02"
+      ],
+      "pattern_hit": 0,
+      "patterns_extra": [
+        "P-PAY-02"
+      ],
+      "findings": 2,
+      "latency_ms": 13.31,
+      "untraceable": [],
+      "grey_keys": [
+        "fee",
+        "work",
+        "title",
+        "contract"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    },
+    {
+      "id": "S0020",
+      "gt_overall": "green",
+      "pred_overall": "green",
+      "gt_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "none",
+        "contract": "green"
+      },
+      "pred_dimensions": {
+        "fee": "none",
+        "work": "none",
+        "title": "none",
+        "pay": "green",
+        "company": "none",
+        "contract": "none"
+      },
+      "dimension_checked": 6,
+      "dimension_hit": 5,
+      "dimension_wrong": [
+        {
+          "dimension": "contract",
+          "gt": "green",
+          "pred": "none"
+        }
+      ],
+      "gt_patterns": [],
+      "pred_patterns": [],
+      "pattern_hit": 0,
+      "patterns_extra": [],
+      "findings": 1,
+      "latency_ms": 10.98,
+      "untraceable": [],
+      "grey_keys": [
+        "fee",
+        "work",
+        "title",
+        "company",
+        "contract"
+      ],
+      "schema_ok": true,
+      "schema_errors": [],
+      "dropped": 0,
+      "calibration": 0,
+      "model_reported_overall": null
+    }
+  ]
+}

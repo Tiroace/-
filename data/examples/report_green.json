@@ -1,0 +1,75 @@
+{
+  "is_job_posting": true,
+  "overall": "green",
+  "summary": "目前看没大问题，可以去",
+  "dimensions": [
+    {
+      "key": "fee",
+      "level": "none",
+      "short": "没提到"
+    },
+    {
+      "key": "work",
+      "level": "none",
+      "short": "没提到"
+    },
+    {
+      "key": "title",
+      "level": "none",
+      "short": "没提到"
+    },
+    {
+      "key": "pay",
+      "level": "green",
+      "short": "看着正常"
+    },
+    {
+      "key": "company",
+      "level": "green",
+      "short": "看着正常"
+    },
+    {
+      "key": "contract",
+      "level": "none",
+      "short": "没提到"
+    }
+  ],
+  "findings": [
+    {
+      "level": "green",
+      "dimension": "company",
+      "title": "公司写得全",
+      "evidence": "公司名称：青岛海联信息技术有限公司",
+      "context": "公司名称：青岛海联信息技术有限公司",
+      "reason": "截图里写了公司名称或地址，公司主体查得到。",
+      "source": "rule",
+      "pattern_id": null,
+      "rule_id": "R-GREEN-COMPANY-01"
+    },
+    {
+      "level": "green",
+      "dimension": "pay",
+      "title": "薪资写清楚",
+      "evidence": "薪资：15000-20000 元/月，五险一金，周末双休",
+      "context": "薪资：15000-20000 元/月，五险一金，周末双休",
+      "reason": "薪资区间和结构写得比较具体，不像是随口画的饼。",
+      "source": "rule",
+      "pattern_id": null,
+      "rule_id": "R-GREEN-PAY-01"
+    }
+  ],
+  "questions_to_ask": [
+    "这个岗位的日常工作内容是什么？",
+    "工资结构和发薪时间怎么安排？",
+    "截图里没提到「收费与借贷」，可以问 HR：入职前需要我先交任何费用吗？",
+    "截图里没提到「工作内容」，可以问 HR：这个岗位每天具体做什么？有没有业绩考核？",
+    "截图里没提到「岗位名称」，可以问 HR：岗位名称和实际职责一致吗？",
+    "截图里没提到「合同社保」，可以问 HR：试用期多久？合同签几年？社保从哪个月开始缴？"
+  ],
+  "how_to_verify": [
+    "到国家企业信用信息公示系统核对公司信息",
+    "面试地点选在公司办公场所，不去酒店或私人住所"
+  ],
+  "prompt_version": "v2.0",
+  "pattern_db_version": "2026-10-30"
+}

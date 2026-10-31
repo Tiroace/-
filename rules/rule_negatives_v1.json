@@ -1,0 +1,112 @@
+{
+  "version": "1.0",
+  "effective_date": "2026-10-31",
+  "note": "六维规则 v1 的反例语料（PM 点名的三类易误判：① 关系户内推 ③ 异地引流 ⑧ 冒名招聘）。每条给：文本、允许的最终结论、允许的维度灯色、必须不出现的 rule_id。用来防止正规国企公告、真实大厂外包、正常外地招工被误判。",
+  "cases": [
+    {
+      "id": "NEG-INSIDER-01",
+      "category": "① 关系户内推",
+      "text": "国家电网 2026 年高校毕业生招聘公告\n应聘人员通过国家电网人才招聘平台报名\n笔试、面试、体检、公示四轮环节\n公司地址：北京市西城区西长安街 86 号",
+      "expect_overall": ["green", "unknown"],
+      "forbid_rules": ["R-INSIDER-01", "R-INSIDER-02", "R-INSIDER-03", "R-NAMED-01", "R-NAMED-02"]
+    },
+    {
+      "id": "NEG-INSIDER-02",
+      "category": "① 关系户内推",
+      "text": "招聘 Java 开发工程师 2 名\n薪资：25-35K，五险一金\n要求：3 年以上经验，本科以上\n公司地址：海淀区中关村软件园\n应聘方式：投递后线上笔试，面试两轮",
+      "expect_overall": ["green", "unknown"],
+      "forbid_rules": ["R-INSIDER-01", "R-INSIDER-02", "R-INSIDER-03"]
+    },
+    {
+      "id": "NEG-INSIDER-03",
+      "category": "① 关系户内推",
+      "text": "公司内部推荐奖励：老员工推荐成功入职，公司奖励 500 元，与求职者无关，求职者不需要交任何费用\n招聘岗位：售后客服\n薪资：6000-8000 元/月\n公司地址：长沙市岳麓区 xx 路 8 号",
+      "expect_overall": ["green", "unknown"],
+      "forbid_rules": ["R-INSIDER-01", "R-INSIDER-02", "R-INSIDER-03"]
+    },
+    {
+      "id": "NEG-INSIDER-04",
+      "category": "① 关系户内推",
+      "text": "青岛海联信息技术有限公司 2026 校园招聘\n招聘岗位：后端开发工程师 10 名\n投递方式：官网投递，笔试面试各一轮，录用后签正式劳动合同\n不收取任何费用，无内推名额一说",
+      "expect_overall": ["green", "unknown"],
+      "forbid_rules": ["R-INSIDER-01", "R-INSIDER-02", "R-INSIDER-03", "R-NAMED-01", "R-NAMED-02"]
+    },
+    {
+      "id": "NEG-INSIDER-05",
+      "category": "① 关系户内推",
+      "text": "招聘岗位：人事专员\n欢迎员工推荐人选，被推荐人与公司直接签订劳动合同，待遇与社招一致\n员工推荐奖励由公司发放，向求职者收取任何费用的一律不是本公司行为",
+      "expect_overall": ["green", "unknown"],
+      "forbid_rules": ["R-INSIDER-01", "R-INSIDER-02", "R-INSIDER-03"]
+    },
+    {
+      "id": "NEG-REMOTE-01",
+      "category": "③ 异地引流",
+      "text": "招聘装配工 20 名\n工作地点：江苏省苏州市吴中区\n薪资：7000-9000 元/月，包住宿\n面试方式：视频面试，报到当天公司派车接站\n公司地址：苏州吴中区 xx 产业园",
+      "expect_overall": ["green", "unknown", "amber"],
+      "forbid_rules": ["R-REMOTE-01"]
+    },
+    {
+      "id": "NEG-REMOTE-02",
+      "category": "③ 异地引流",
+      "text": "招聘驻外销售代表，主要负责华南区域客户\n工作地点：广州，公司包住宿、报销往返高铁\n薪资：底薪 8000 元 + 提成，缴纳五险一金\n公司地址：广州市天河区 xx 大厦",
+      "expect_overall": ["green", "unknown", "amber"],
+      "forbid_rules": ["R-REMOTE-01"]
+    },
+    {
+      "id": "NEG-REMOTE-03",
+      "category": "③ 异地引流",
+      "text": "招聘生产线操作工\n工作地点：安徽省合肥市，本地岗位已满的候选人可申请外地厂区应聘，自愿选择\n外地厂区提供宿舍和班车\n薪资：6000-7500 元/月，缴纳社保",
+      "expect_overall": ["green", "unknown", "amber"],
+      "forbid_rules": ["R-REMOTE-02"]
+    },
+    {
+      "id": "NEG-REMOTE-04",
+      "category": "③ 异地引流",
+      "text": "招聘电子厂普工 50 名\n工作地点：江苏省苏州市吴中区（招工方自有厂区，非中介转派）\n薪资：6000-7500 元/月，加班费另算，入职即缴社保\n说明：本岗位就在苏州工作，不涉及异地调派，求职者自愿选择是否应聘",
+      "expect_overall": ["green", "unknown", "amber"],
+      "forbid_rules": ["R-REMOTE-01", "R-REMOTE-02"]
+    },
+    {
+      "id": "NEG-REMOTE-05",
+      "category": "③ 异地引流",
+      "text": "招聘仓储分拣员\n工作地点：本市高新区物流园 3 号库\n薪资：5500 元/月，包吃住\n住宿在公司宿舍，通勤 10 分钟",
+      "expect_overall": ["green", "unknown"],
+      "forbid_rules": ["R-REMOTE-01", "R-REMOTE-02"]
+    },
+    {
+      "id": "NEG-IMPERSON-01",
+      "category": "⑧ 冒名招聘",
+      "text": "招聘外包后端开发工程师 5 名\n合作客户：国内某头部互联网公司（已签合作协议，非该公司直招）\n薪资：20-30K，缴纳五险一金\n公司地址：杭州市余杭区 xx 科技园，公司名称：杭州联洋信息技术有限公司",
+      "expect_overall": ["green", "unknown", "amber"],
+      "forbid_rules": ["R-IMPERSON-01", "R-IMPERSON-02"]
+    },
+    {
+      "id": "NEG-IMPERSON-02",
+      "category": "⑧ 冒名招聘",
+      "text": "招聘财务专员\n公司名称：青岛瑞和财务咨询有限公司\n公司地址：城阳区正阳路 88 号\n薪资：6000-7500 元/月，周末双休，缴纳五险一金\n可在企业信用信息公示系统查询我司信息",
+      "expect_overall": ["green", "unknown"],
+      "forbid_rules": ["R-IMPERSON-01", "R-IMPERSON-02"]
+    },
+    {
+      "id": "NEG-IMPERSON-03",
+      "category": "⑧ 冒名招聘",
+      "text": "招聘行政助理\n用工单位：某市三甲医院（外包岗位，劳动合同与本公司签订）\n地址：医院行政楼 3 层，面试请到 xx 路 12 号办公楼\n薪资：5000-6000 元/月，缴纳五险一金",
+      "expect_overall": ["green", "unknown", "amber"],
+      "forbid_rules": ["R-IMPERSON-01"]
+    },
+    {
+      "id": "NEG-IMPERSON-04",
+      "category": "⑧ 冒名招聘",
+      "text": "招聘岗位：物流仓管\n公司全称：成都远达供应链管理有限公司\n统一社会信用代码：91510100MA6XXXXXXX（可在国家企业信用信息公示系统查验）\n办公地址：成都市双流区物流大道 18 号 2 栋\n薪资：5500-7000 元/月，缴纳五险一金",
+      "expect_overall": ["green", "unknown"],
+      "forbid_rules": ["R-IMPERSON-01", "R-IMPERSON-02"]
+    },
+    {
+      "id": "NEG-IMPERSON-05",
+      "category": "⑧ 冒名招聘",
+      "text": "某市公安局 2026 年招聘警务辅助人员公告\n报名方式：通过市人社局官网统一报名，笔试、体能测试、面试、体检、公示\n本次招聘由市公安局政治部直接组织，不委托任何中介机构，不收取费用",
+      "expect_overall": ["green", "unknown"],
+      "forbid_rules": ["R-IMPERSON-01", "R-IMPERSON-02"]
+    }
+  ]
+}

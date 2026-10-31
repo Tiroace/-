@@ -1,0 +1,453 @@
+{
+  "generated_at": "2026-10-31 00:39:08",
+  "model": "mock-v1",
+  "model_is_mock": true,
+  "mock_defects": false,
+  "lexicon_version": "v1.0",
+  "testset": "D:\\qiuzhibilei\\data\\testset\\index.jsonl",
+  "sample_count": 20,
+  "failure_count": 0,
+  "failures": [],
+  "metrics": {
+    "high_recall": 1.0,
+    "safe_false_high": 0.0,
+    "avg_ms": 3.56,
+    "p95_ms": 5.53,
+    "evidence_traceable": 1.0,
+    "mid_level_exact": 1.0,
+    "mid_level_alarm": 1.0,
+    "avg_risk_count": 1.55,
+    "schema_pass_rate": 1.0,
+    "evidence_dropped_total": 0,
+    "calibration_adjust_total": 0,
+    "model_retry_cases": 0,
+    "evidence_dropped_rate": 0.0,
+    "pii_leaks": 0,
+    "pii_leak_cases": 0,
+    "pii_leak_samples": [],
+    "level_dist": {
+      "high": 7,
+      "warn": 5,
+      "notice": 2,
+      "safe": 6,
+      "unknown": 0
+    }
+  },
+  "gate": {
+    "high_recall": "pass",
+    "safe_false_high": "pass",
+    "avg_ms": "pass",
+    "evidence_traceable": "pass",
+    "pii_zero_leak": "pass",
+    "schema": "pass"
+  },
+  "thresholds": {
+    "high_recall": 0.9,
+    "safe_false_high": 0.05,
+    "avg_ms": 30000,
+    "evidence_traceable": 1.0,
+    "pii_leaks": 0
+  },
+  "cases": [
+    {
+      "id": "T001",
+      "gt_level": "high",
+      "pred_level": "high",
+      "gt_types": [
+        "scam"
+      ],
+      "pred_types": [
+        "scam"
+      ],
+      "risk_count": 3,
+      "latency_ms": 7.34,
+      "evidence_count": 3,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "high",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T002",
+      "gt_level": "high",
+      "pred_level": "high",
+      "gt_types": [
+        "scam"
+      ],
+      "pred_types": [
+        "scam"
+      ],
+      "risk_count": 2,
+      "latency_ms": 4.45,
+      "evidence_count": 2,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "high",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T003",
+      "gt_level": "high",
+      "pred_level": "high",
+      "gt_types": [
+        "train_loan"
+      ],
+      "pred_types": [
+        "train_loan"
+      ],
+      "risk_count": 3,
+      "latency_ms": 4.63,
+      "evidence_count": 3,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "high",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T004",
+      "gt_level": "high",
+      "pred_level": "high",
+      "gt_types": [
+        "scam"
+      ],
+      "pred_types": [
+        "scam"
+      ],
+      "risk_count": 2,
+      "latency_ms": 3.76,
+      "evidence_count": 2,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "high",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T005",
+      "gt_level": "high",
+      "pred_level": "high",
+      "gt_types": [
+        "scam"
+      ],
+      "pred_types": [
+        "scam"
+      ],
+      "risk_count": 3,
+      "latency_ms": 4.0,
+      "evidence_count": 3,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "high",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T006",
+      "gt_level": "high",
+      "pred_level": "high",
+      "gt_types": [
+        "scam"
+      ],
+      "pred_types": [
+        "scam"
+      ],
+      "risk_count": 2,
+      "latency_ms": 4.67,
+      "evidence_count": 2,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "high",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T007",
+      "gt_level": "high",
+      "pred_level": "high",
+      "gt_types": [
+        "scam"
+      ],
+      "pred_types": [
+        "scam",
+        "train_loan"
+      ],
+      "risk_count": 3,
+      "latency_ms": 5.45,
+      "evidence_count": 3,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "high",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T008",
+      "gt_level": "warn",
+      "pred_level": "warn",
+      "gt_types": [
+        "bait_switch"
+      ],
+      "pred_types": [
+        "bait_switch",
+        "exaggerate"
+      ],
+      "risk_count": 3,
+      "latency_ms": 4.62,
+      "evidence_count": 3,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "warn",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T009",
+      "gt_level": "warn",
+      "pred_level": "warn",
+      "gt_types": [
+        "bait_switch",
+        "exaggerate"
+      ],
+      "pred_types": [
+        "bait_switch",
+        "exaggerate"
+      ],
+      "risk_count": 4,
+      "latency_ms": 4.29,
+      "evidence_count": 4,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "warn",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T010",
+      "gt_level": "notice",
+      "pred_level": "notice",
+      "gt_types": [
+        "exaggerate"
+      ],
+      "pred_types": [
+        "exaggerate"
+      ],
+      "risk_count": 1,
+      "latency_ms": 3.13,
+      "evidence_count": 1,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "notice",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T011",
+      "gt_level": "notice",
+      "pred_level": "notice",
+      "gt_types": [
+        "exaggerate"
+      ],
+      "pred_types": [
+        "exaggerate"
+      ],
+      "risk_count": 2,
+      "latency_ms": 2.64,
+      "evidence_count": 2,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "notice",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T012",
+      "gt_level": "warn",
+      "pred_level": "warn",
+      "gt_types": [
+        "illegal_clause"
+      ],
+      "pred_types": [
+        "illegal_clause"
+      ],
+      "risk_count": 1,
+      "latency_ms": 5.53,
+      "evidence_count": 1,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "warn",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T013",
+      "gt_level": "warn",
+      "pred_level": "warn",
+      "gt_types": [
+        "illegal_clause"
+      ],
+      "pred_types": [
+        "illegal_clause"
+      ],
+      "risk_count": 1,
+      "latency_ms": 2.55,
+      "evidence_count": 1,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "warn",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T014",
+      "gt_level": "warn",
+      "pred_level": "warn",
+      "gt_types": [
+        "illegal_clause"
+      ],
+      "pred_types": [
+        "illegal_clause"
+      ],
+      "risk_count": 1,
+      "latency_ms": 2.2,
+      "evidence_count": 1,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "warn",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T015",
+      "gt_level": "safe",
+      "pred_level": "safe",
+      "gt_types": [],
+      "pred_types": [],
+      "risk_count": 0,
+      "latency_ms": 1.97,
+      "evidence_count": 0,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "safe",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T016",
+      "gt_level": "safe",
+      "pred_level": "safe",
+      "gt_types": [],
+      "pred_types": [],
+      "risk_count": 0,
+      "latency_ms": 1.73,
+      "evidence_count": 0,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "safe",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T017",
+      "gt_level": "safe",
+      "pred_level": "safe",
+      "gt_types": [],
+      "pred_types": [],
+      "risk_count": 0,
+      "latency_ms": 2.98,
+      "evidence_count": 0,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "safe",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T018",
+      "gt_level": "safe",
+      "pred_level": "safe",
+      "gt_types": [],
+      "pred_types": [],
+      "risk_count": 0,
+      "latency_ms": 1.94,
+      "evidence_count": 0,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "safe",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T019",
+      "gt_level": "safe",
+      "pred_level": "safe",
+      "gt_types": [],
+      "pred_types": [],
+      "risk_count": 0,
+      "latency_ms": 1.67,
+      "evidence_count": 0,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "safe",
+      "dropped_evidence": [],
+      "calibration": []
+    },
+    {
+      "id": "T020",
+      "gt_level": "safe",
+      "pred_level": "safe",
+      "gt_types": [],
+      "pred_types": [],
+      "risk_count": 0,
+      "latency_ms": 1.73,
+      "evidence_count": 0,
+      "untraceable": [],
+      "pii_leaks": 0,
+      "schema_ok": true,
+      "schema_errors": [],
+      "model_reported_level": "safe",
+      "dropped_evidence": [],
+      "calibration": []
+    }
+  ]
+}

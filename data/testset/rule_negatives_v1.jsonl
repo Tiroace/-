@@ -1,0 +1,14 @@
+{"id": "NEG-INSIDER-01", "category": "insider", "expected_hit": false, "expected_overall": "not_red", "text": "招聘岗位：运营专员\n本岗位为员工内部推荐，内推不收取任何费用，录用后与公司直接签订劳动合同\n薪资：8000-12000元/月", "note": "正常内推：明确不收费、与公司直签"}
+{"id": "NEG-INSIDER-02", "category": "insider", "expected_hit": false, "expected_overall": "not_red", "text": "招聘岗位：客服专员\n可内推，简历发我即可，流程走公司官网投递\n不收取任何费用，录用后签正式劳动合同", "note": "正常内推：走官网流程"}
+{"id": "NEG-INSIDER-03", "category": "insider", "expected_hit": false, "expected_overall": "not_red", "text": "招聘岗位：行政专员\n公司内部有岗位空缺，欢迎同事推荐人选，推荐成功有内部奖励，不向求职者收取任何费用", "note": "企业内推奖励，不向求职者收费"}
+{"id": "NEG-INSIDER-04", "category": "insider", "expected_hit": false, "expected_overall": "not_red", "text": "招聘岗位：销售专员\n底薪4000元+提成，入职即缴五险一金，签正式劳动合同\n工作地点：市南区写字楼", "note": "正常岗位，无内推话术"}
+{"id": "NEG-NAMED-01", "category": "named", "expected_hit": false, "expected_overall": "not_red", "text": "国家电网2026年高校毕业生招聘公告\n招聘岗位：电气工程师\n报名方式：登录国家电网人才招聘平台网上报名，需参加统一笔试与面试\n学历要求：本科及以上，专业对口", "note": "正常国企招聘公告：官方渠道、公开流程"}
+{"id": "NEG-NAMED-02", "category": "named", "expected_hit": false, "expected_overall": "not_red", "text": "招聘岗位：护理员\n工作单位：市第一人民医院（三甲），劳务派遣用工\n薪资：5000-6000元/月，缴纳五险一金\n面试地点：医院行政楼3楼人事科", "note": "正规医院招聘：说明用工形式与面试地点"}
+{"id": "NEG-NAMED-03", "category": "named", "expected_hit": false, "expected_overall": "not_red", "text": "招聘岗位：Java开发工程师（驻场外包）\n工作内容：驻客户公司做业务系统开发，劳动合同与本公司签订\n薪资：15000-20000元/月，五险一金，周末双休", "note": "正规外包岗：如实说明签约主体"}
+{"id": "NEG-NAMED-04", "category": "named", "expected_hit": false, "expected_overall": "not_red", "text": "招聘岗位：事业单位编制内文员\n报名方式：参加市人社局统一公开招聘考试，详见人社局官网公告\n不收取任何费用", "note": "正规事业单位招聘：走公开考试"}
+{"id": "NEG-REMOTE-01", "category": "remote", "expected_hit": false, "expected_overall": "not_red", "text": "招聘岗位：电子厂普工\n工作地点：江苏苏州工业园区工厂，公司提供宿舍与工作餐\n薪资：5500-7000元/月，加班另算\n要求：18-45岁，能适应倒班", "note": "正常外地招工：写明地点与待遇"}
+{"id": "NEG-REMOTE-02", "category": "remote", "expected_hit": false, "expected_overall": "not_red", "text": "招聘岗位：建筑工地电焊工\n项目地点：省内其他城市项目部，公司统一安排住宿\n薪资：300元/天，月结，签劳动合同", "note": "正常外派：项目制用工，说明住宿与合同"}
+{"id": "NEG-REMOTE-03", "category": "remote", "expected_hit": false, "expected_overall": "not_red", "text": "招聘岗位：连锁门店店长\n工作地点：本市各区门店，按公司安排分配\n薪资：6000-8000元/月，五险一金", "note": "本市范围内调岗，不是异地引流"}
+{"id": "NEG-IMPERSON-01", "category": "imperson", "expected_hit": false, "expected_overall": "not_red", "text": "招聘单位：青岛海联信息技术有限公司\n招聘岗位：后端开发工程师\n公司地址：市南区软件园12号楼\n统一社会信用代码详见营业执照，面试可查看", "note": "正常企业招聘：写明全称、地址、可查执照"}
+{"id": "NEG-IMPERSON-02", "category": "imperson", "expected_hit": false, "expected_overall": "not_red", "text": "招聘岗位：仓库管理员\n公司：城北物流有限公司（存续8年，参保人数可查）\n工作地点：城北物流园3号库", "note": "正常企业：主体信息完整"}
+{"id": "NEG-IMPERSON-03", "category": "imperson", "expected_hit": false, "expected_overall": "not_red", "text": "招聘岗位：外贸跟单员\n公司名称：青岛瑞和国际货运代理有限公司\n办公地址：市南区香港中路66号18层，可到国家企业信用信息公示系统查询", "note": "正常企业：提供可核实信息"}

@@ -1,0 +1,28 @@
+{
+  "version": "v1",
+  "date": "2026-10-31",
+  "notes": "社区敏感词回归测试集。按任务书 §11.3 三道过滤。action 语义：block=直接拦截；rewrite=提示改写成事实描述后允许提交；mask=打码后允许发布。运营可在 sensitive_words 表增删词，本文件只做回归基线，避免运营改词导致测试漂移。",
+  "cases": [
+    {"id": "ABUSE-01", "category": "辱骂", "input": "你这种人就是傻X", "action": "block", "why": "人身攻击"},
+    {"id": "ABUSE-02", "category": "辱骂", "input": "去死吧你", "action": "block", "why": "人身攻击"},
+    {"id": "ABUSE-03", "category": "辱骂", "input": "垃圾人开的公司", "action": "block", "why": "人身攻击"},
+
+    {"id": "DEFAME-01", "category": "定性词", "input": "这家公司是骗子公司", "action": "rewrite", "why": "对企业定性，名誉风险"},
+    {"id": "DEFAME-02", "category": "定性词", "input": "黑心企业，别去", "action": "rewrite", "why": "对企业定性"},
+    {"id": "DEFAME-03", "category": "定性词", "input": "无良公司招人", "action": "rewrite", "why": "对企业定性"},
+    {"id": "DEFAME-04", "category": "定性词", "input": "骗子 HR，大家小心", "action": "rewrite", "why": "对个人定性"},
+
+    {"id": "ILLEGAL-01", "category": "违法有害", "input": "来兼职刷单，日结", "action": "block", "why": "违法活动"},
+    {"id": "ILLEGAL-02", "category": "违法有害", "input": "可以代开发票", "action": "block", "why": "违法活动"},
+
+    {"id": "PII-PHONE-01", "category": "手机号", "input": "HR 电话 13812345678", "action": "mask", "expect_masked": "138****5678"},
+    {"id": "PII-PHONE-02", "category": "手机号", "input": "联系 138 1234 5678", "action": "mask", "why": "带空格的手机号也要打码"},
+    {"id": "PII-WECHAT-01", "category": "微信号", "input": "加微信 wxid_abc123 详聊", "action": "mask"},
+    {"id": "PII-WECHAT-02", "category": "微信号", "input": "微信号：zhangHR2024", "action": "mask"},
+    {"id": "PII-QQ-01", "category": "QQ号", "input": "QQ 123456789 咨询", "action": "mask"},
+    {"id": "PII-ID-01", "category": "身份证号", "input": "身份证 110101199003074415", "action": "mask"},
+    {"id": "PII-BANK-01", "category": "银行卡号", "input": "卡号 6222021234567890123 转账", "action": "mask"},
+    {"id": "PII-NAME-01", "category": "人名", "input": "面试官张经理说要收费", "action": "mask", "why": "人名需打码为某女士/某先生"},
+    {"id": "PII-ADDR-01", "category": "门牌号", "input": "在人民路22号3单元501面试", "action": "mask", "why": "门牌号需去细节"}
+  ]
+}

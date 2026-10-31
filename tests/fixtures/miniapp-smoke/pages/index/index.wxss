@@ -1,0 +1,29 @@
+.page {
+  padding: 40rpx;
+}
+
+.greeting {
+  font-size: 34rpx;
+  font-weight: bold;
+  margin-bottom: 24rpx;
+}
+
+.counter {
+  margin-bottom: 24rpx;
+  color: #333;
+}
+
+.btn {
+  margin-bottom: 24rpx;
+}
+
+.result {
+  margin: 24rpx 0;
+  color: #666;
+}
+
+.input {
+  border: 1rpx solid #ddd;
+  padding: 16rpx;
+  border-radius: 8rpx;
+}

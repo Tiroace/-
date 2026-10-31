@@ -1,0 +1,95 @@
+{
+  "is_job_posting": true,
+  "overall": "red",
+  "summary": "有几处不对劲，先别急着去",
+  "dimensions": [
+    {
+      "key": "fee",
+      "level": "red",
+      "short": "有问题"
+    },
+    {
+      "key": "work",
+      "level": "none",
+      "short": "没提到"
+    },
+    {
+      "key": "title",
+      "level": "none",
+      "short": "没提到"
+    },
+    {
+      "key": "pay",
+      "level": "green",
+      "short": "看着正常"
+    },
+    {
+      "key": "company",
+      "level": "none",
+      "short": "没提到"
+    },
+    {
+      "key": "contract",
+      "level": "none",
+      "short": "没提到"
+    }
+  ],
+  "findings": [
+    {
+      "level": "red",
+      "dimension": "fee",
+      "title": "先交押金",
+      "evidence": "入职须知：需交押金 300 元，工作满三个月退还",
+      "context": "入职须知：需交押金 300 元，工作满三个月退还",
+      "reason": "入职前就收押金、保证金或服装费，正规公司不会这样收费，钱交出去很难要回来。",
+      "source": "rule",
+      "pattern_id": null,
+      "rule_id": "R-DEPOSIT-01"
+    },
+    {
+      "level": "red",
+      "dimension": "fee",
+      "title": "先交押金",
+      "evidence": "另外收取服装费 150 元、工牌费 20 元",
+      "context": "另外收取服装费 150 元、工牌费 20 元",
+      "reason": "入职前就收押金、保证金或服装费，正规公司不会这样收费，钱交出去很难要回来。",
+      "source": "rule",
+      "pattern_id": null,
+      "rule_id": "R-DEPOSIT-01"
+    },
+    {
+      "level": "red",
+      "dimension": "fee",
+      "title": "先交钱再上岗",
+      "evidence": "名额有限，先到先得",
+      "context": "名额有限，先到先得",
+      "reason": "入职前以任何名目收费，都不符合《劳动合同法》。",
+      "source": "pattern",
+      "pattern_id": "P-FEE-06",
+      "rule_id": null
+    },
+    {
+      "level": "green",
+      "dimension": "pay",
+      "title": "薪资写清楚",
+      "evidence": "薪资：4800-5500 元/月，包吃住",
+      "context": "薪资：4800-5500 元/月，包吃住",
+      "reason": "薪资区间和结构写得比较具体，不像是随口画的饼。",
+      "source": "rule",
+      "pattern_id": null,
+      "rule_id": "R-GREEN-PAY-01"
+    }
+  ],
+  "questions_to_ask": [
+    "入职前需要我先交任何费用吗？",
+    "截图里没提到「工作内容」，可以问 HR：这个岗位每天具体做什么？有没有业绩考核？",
+    "截图里没提到「岗位名称」，可以问 HR：岗位名称和实际职责一致吗？",
+    "截图里没提到「公司信息」，可以问 HR：公司全称是什么？办公地址在哪里？",
+    "截图里没提到「合同社保」，可以问 HR：试用期多久？合同签几年？社保从哪个月开始缴？"
+  ],
+  "how_to_verify": [
+    "正规企业不会向求职者收费；遇到要求转账、索要验证码，立即拨打 110 或 96110"
+  ],
+  "prompt_version": "v2.0",
+  "pattern_db_version": "2026-10-30"
+}

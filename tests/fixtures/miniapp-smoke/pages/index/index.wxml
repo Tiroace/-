@@ -1,0 +1,11 @@
+<view class="page">
+  <view id="greeting" class="greeting">{{greeting}}</view>
+
+  <view id="counter" class="counter">计数：{{count}}</view>
+  <button id="btn-inc" class="btn" type="primary" bindtap="onTapInc">点我 +1</button>
+
+  <button id="btn-submit" class="btn" bindtap="onTapSubmit">提交</button>
+  <view id="submit-result" class="result">提交结果：{{submitted}}</view>
+
+  <input id="input-name" class="input" placeholder="输入昵称" />
+</view>

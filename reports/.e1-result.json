@@ -1,0 +1,68 @@
+{
+  "ws": "ws://127.0.0.1:9422",
+  "project": "D:\\qiuzhibilei\\miniprogram\\dist\\build\\mp-weixin",
+  "results": [
+    {
+      "name": "1-首页主界面(标题/主按钮/次数/不扣次数)",
+      "ok": true,
+      "detail": "标题/主按钮/次数/承诺 4 项齐备"
+    },
+    {
+      "name": "2-示例报告入口与信号灯说明",
+      "ok": true,
+      "detail": "示例入口 + 三色信号灯说明齐备"
+    },
+    {
+      "name": "3-首页AI服务公示",
+      "ok": true,
+      "detail": "AI 公示：本服务由 AI 生成内容，查看 AI 服务说明</text><view clas"
+    },
+    {
+      "name": "4-报告页可达",
+      "ok": true,
+      "detail": "route=pages/report/index"
+    },
+    {
+      "name": "5-报告页AI标识与免责声明",
+      "ok": true,
+      "detail": "报告页 AI 标识 + 免责声明均在"
+    },
+    {
+      "name": "6a-报告页判断不准入口",
+      "ok": true,
+      "detail": "报告页「判断不准？告诉我们」存在"
+    },
+    {
+      "name": "6b-我的页申诉入口",
+      "ok": true,
+      "detail": "我的页「意见反馈与申诉」存在"
+    },
+    {
+      "name": "7-会员页(可达/不自动续费)",
+      "ok": true,
+      "detail": "会员页声明齐备，route=pages/member/index"
+    },
+    {
+      "name": "8-我的页与隐私协议入口",
+      "ok": true,
+      "detail": "隐私政策 + 用户协议入口均在"
+    },
+    {
+      "name": "9-分析中页与阶段文案",
+      "ok": true,
+      "detail": "分段阶段文案命中 4/4"
+    },
+    {
+      "name": "11-首页截图取证",
+      "ok": true,
+      "detail": "截图 67076 bytes"
+    },
+    {
+      "name": "10-连续页面跳转稳定性",
+      "ok": true,
+      "detail": "5 次跳转完成：pages/index/index → pages/member/index → pages/mine/index → pages/analyzing/index → pages/index/index"
+    }
+  ],
+  "passed": 12,
+  "total": 12
+}
