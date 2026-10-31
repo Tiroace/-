@@ -16,5 +16,14 @@ if (-not $py) {
     if (Test-Path $candidate) { $py = $candidate } else { $py = "python" }
 }
 
-& $py -m pytest tests -q @PassThru
+# 无参数：全量；首个参数以 '-' 开头：在 tests 目录上加过滤；否则把参数当 pytest 目标（文件/节点）传
+if ($PassThru.Count -eq 0) {
+    $targets = @("tests", "-q")
+} elseif ($PassThru[0].StartsWith("-")) {
+    $targets = @("tests") + $PassThru
+} else {
+    $targets = $PassThru
+}
+
+& $py -m pytest @targets
 exit $LASTEXITCODE
