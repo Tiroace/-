@@ -15,8 +15,8 @@ export const EXAMPLE_REPORTS = {
       },
       {
         "key": "work",
-        "level": "red",
-        "short": "有问题"
+        "level": "none",
+        "short": "没提到"
       },
       {
         "key": "title",
@@ -72,26 +72,15 @@ export const EXAMPLE_REPORTS = {
         "source": "rule",
         "pattern_id": null,
         "rule_id": "R-ADVANCE-01"
-      },
-      {
-        "level": "red",
-        "dimension": "work",
-        "title": "让你下App进群",
-        "evidence": "流程：加客服微信领取任务单，垫付货款后截图返款",
-        "context": "流程：加客服微信领取任务单，垫付货款后截图返款",
-        "reason": "让你下载陌生 App、进 QQ 群领任务，是为了绕开招聘平台。",
-        "source": "rule",
-        "pattern_id": null,
-        "rule_id": "R-APP-01"
       }
     ],
     "questions_to_ask": [
       "做任务需要我先垫钱吗？垫多少？",
       "需要我下载哪个 App？进哪个群？为什么不在平台里沟通？",
       "这个岗位要不要做刷单、点赞返利这类任务？",
+      "截图里没提到「工作内容」，可以问 HR：这个岗位每天具体做什么？有没有业绩考核？",
       "截图里没提到「岗位名称」，可以问 HR：岗位名称和实际职责一致吗？",
-      "截图里没提到「薪资待遇」，可以问 HR：底薪是多少？提成怎么算？",
-      "截图里没提到「公司信息」，可以问 HR：公司全称是什么？办公地址在哪里？"
+      "截图里没提到「薪资待遇」，可以问 HR：底薪是多少？提成怎么算？"
     ],
     "how_to_verify": [
       "任何「先垫钱再返利」的一律拒绝，这是典型套路",

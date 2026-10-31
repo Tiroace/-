@@ -32,6 +32,9 @@ DIM_TITLE = {
     "contract": "合同社保存疑",
 }
 
+# D31「一事一灯」优先级：冲突时取序号小的（收费直接掏空钱包，法条最硬）
+DIM_PRIORITY = {"fee": 0, "work": 1, "contract": 2, "pay": 3, "title": 4, "company": 5}
+
 PATTERN_LEVEL_TO_FINDING = {
     "high": "red",
     "red": "red",
@@ -80,6 +83,14 @@ def _reason(rule_id: str | None, dimension: str, pattern_why: str | None = None,
         if reason:
             return _clamp(reason)
     return _clamp(DIMENSION_FALLBACK_REASON.get(dimension, "这一项有风险，建议先核实。"))
+
+
+def _pick_by_priority(a: dict, b: dict) -> tuple[dict, dict]:
+    """D31 优先级：fee > work > contract > pay > title > company；同维取等级高的。"""
+    rank = DIM_PRIORITY
+    ra = (rank.get(a["dimension"], 99), -LEVEL_RANK[a["level"]])
+    rb = (rank.get(b["dimension"], 99), -LEVEL_RANK[b["level"]])
+    return (a, b) if ra <= rb else (b, a)
 
 
 def compose(text: str, hits, pattern_hits, *, min_pattern_score: float = 0.5) -> dict:
@@ -165,6 +176,37 @@ def compose(text: str, hits, pattern_hits, *, min_pattern_score: float = 0.5) ->
         best.values(),
         key=lambda f: (-LEVEL_RANK[f["level"]], f["dimension"], f["title"]),
     )
+
+    # D34：同一句话被多条规则各报一次（例如培训贷同时命中 R-TRAIN-02 与 R-CLAUSE-02、
+    # 「视频号发央国企招聘」同时命中 R-INSIDER-02 与 R-IMPERSON-01），会出现两盏灯都亮。
+    # 按 D31 优先级「一事一灯」只保留优先级最高的那条，被丢弃的记进 dropped_by_priority 便于排查
+    # ——不记日志就分不清「真多判被压掉」还是「规则漏了」（D34 明确要求）。
+    groups: dict[str, list[dict]] = {}
+    for finding in ordered:
+        groups.setdefault(normalize(finding["evidence"]), []).append(finding)
+
+    dropped: list[dict] = []
+    survivors: list[dict] = []
+    for evidence_key, group in groups.items():
+        # 组内按 D31 优先级排序，第一名留下
+        group.sort(key=lambda f: (DIM_PRIORITY.get(f["dimension"], 99), -LEVEL_RANK[f["level"]]))
+        winner = group[0]
+        survivors.append(winner)
+        winner_id = winner.get("rule_id") or winner.get("pattern_id")
+        for loser in group[1:]:
+            dropped.append(
+                {
+                    "rule_id": loser.get("rule_id") or loser.get("pattern_id"),
+                    "dimension": loser["dimension"],
+                    "reason": f"same_evidence_as:{winner_id}",
+                    "evidence": loser["evidence"][:60],
+                }
+            )
+    ordered = sorted(
+        survivors,
+        key=lambda f: (-LEVEL_RANK[f["level"]], f["dimension"], f["title"]),
+    )
+
     # 每个维度最多 3 条，总数 12
     counts: dict[str, int] = {}
     kept: list[dict] = []
@@ -182,4 +224,5 @@ def compose(text: str, hits, pattern_hits, *, min_pattern_score: float = 0.5) ->
         "findings": kept,
         "questions_to_ask": questions[:5],
         "how_to_verify": verifies[:5],
+        "dropped_by_priority": dropped,
     }

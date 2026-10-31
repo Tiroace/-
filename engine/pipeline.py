@@ -221,6 +221,9 @@ def analyze(
         timer.stage("rules_compose", t0)
         trace["model_attempts"] = []
         trace["compose_findings"] = len(model_out.get("findings") or [])
+        # D34：同一证据被多条规则各报一次时，按优先级只留一条；被丢弃的记进来，
+        # 否则分不清「真多判被压掉」和「规则漏了」。
+        trace["dropped_by_priority"] = model_out.get("dropped_by_priority") or []
 
     is_job = bool(model_out.get("is_job_posting", True))
 
