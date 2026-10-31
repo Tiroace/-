@@ -7,8 +7,8 @@ set -e
 staged=$(git diff --cached --name-only --diff-filter=ACM)
 [ -z "$staged" ] && exit 0
 
-# 1) 禁止提交 .env / 私钥文件
-bad_files=$(echo "$staged" | grep -E '(^|/)\.env(\.|$)|\.pem$|\.key$|\.p12$|secrets/' || true)
+# 1) 禁止提交 .env / 私钥文件（.env.example 模板除外）
+bad_files=$(echo "$staged" | grep -vE '(^|/)\.env\.example$' | grep -E '(^|/)\.env(\.|$)|\.pem$|\.key$|\.p12$|secrets/' || true)
 if [ -n "$bad_files" ]; then
   echo "[pre-commit] 拒绝：以下文件疑似密钥/环境文件，不应进仓库：" >&2
   echo "$bad_files" >&2
