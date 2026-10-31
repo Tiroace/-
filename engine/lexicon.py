@@ -291,13 +291,21 @@ def _negated(text: str, start: int, negations: tuple[str, ...]) -> bool:
         if window[i] in _CLAUSE_BOUNDARY:
             window = window[i + 1 :]
             break
-    # 顿号分隔的并列成分里，否定词只否定它自己那一项：
-    # 「不负责装卸、不租车卖车、不收取费用，综合月收入 9500」——「不收取」管的是费用，
-    # 不能顺带把后半句的高薪也否定掉，所以遇到顿号就只取顿号之后的部分。
+    # 并列成分的否定范围：
+    # 1) 顿号分隔的并列项里，否定词只否定自己那一项：
+    #    「不负责装卸、不租车卖车、不收取费用，综合月收入 9500」
+    # 2) 逗号分隔时看否定词是否贴在开头（「无内推名额」「不收费」= 否定这一项本身），
+    #    贴开头就整项算被否定；否则只看逗号之后，「不收取任何费用，月入 9500」里的
+    #    「不收取」管的是费用，不能顺带把高薪也否定掉。
+    cut = -1
     for sep in ("、", "，", ","):
-        cut = window.rfind(sep)
-        if cut >= 0:
-            window = window[cut + 1 :]
+        pos = window.rfind(sep)
+        if pos > cut:
+            cut = pos
+    if cut >= 0:
+        before = window[:cut]
+        anchored = re.match(r"\s*(不|无|未|没|免)", before) is not None
+        window = window if anchored else window[cut + 1 :]
     return any(n in window for n in negations)
 
 

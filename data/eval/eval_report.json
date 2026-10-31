@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-31 20:03:48",
+  "generated_at": "2026-10-31 20:07:27",
   "schema_version": "v2",
   "engine_mode": "rules",
   "model": null,
@@ -27,8 +27,8 @@
     "context_consistent": 1.0,
     "pii_leaks": 0,
     "grey_question_rate": 1.0,
-    "avg_ms": 37.42,
-    "p95_ms": 63.27,
+    "avg_ms": 42.36,
+    "p95_ms": 68.28,
     "schema_pass_rate": 1.0,
     "findings_dropped_total": 0,
     "calibration_adjust_total": 0,
@@ -99,7 +99,7 @@
         "P-WORK-04"
       ],
       "findings": 4,
-      "latency_ms": 74.51,
+      "latency_ms": 83.67,
       "untraceable": [],
       "grey_keys": [
         "title",
@@ -153,7 +153,7 @@
         "P-PAY-02"
       ],
       "findings": 4,
-      "latency_ms": 56.91,
+      "latency_ms": 39.8,
       "untraceable": [],
       "grey_keys": [
         "work",
@@ -205,7 +205,7 @@
         "P-FEE-04"
       ],
       "findings": 2,
-      "latency_ms": 32.47,
+      "latency_ms": 38.52,
       "untraceable": [],
       "grey_keys": [
         "work",
@@ -258,7 +258,7 @@
         "P-OVERSEAS-01"
       ],
       "findings": 1,
-      "latency_ms": 26.81,
+      "latency_ms": 32.67,
       "untraceable": [],
       "grey_keys": [
         "fee",
@@ -311,7 +311,7 @@
         "P-WORK-01"
       ],
       "findings": 3,
-      "latency_ms": 37.29,
+      "latency_ms": 41.25,
       "untraceable": [],
       "grey_keys": [
         "title",
@@ -356,7 +356,7 @@
         "P-FEE-03"
       ],
       "findings": 2,
-      "latency_ms": 30.21,
+      "latency_ms": 57.5,
       "untraceable": [],
       "grey_keys": [
         "work",
@@ -411,7 +411,7 @@
         "P-WORK-05"
       ],
       "findings": 4,
-      "latency_ms": 36.22,
+      "latency_ms": 68.28,
       "untraceable": [],
       "grey_keys": [
         "title",
@@ -466,7 +466,7 @@
         "P-TITLE-01"
       ],
       "findings": 2,
-      "latency_ms": 29.53,
+      "latency_ms": 44.17,
       "untraceable": [],
       "grey_keys": [
         "fee",
@@ -529,7 +529,7 @@
         "P-WORK-06"
       ],
       "findings": 2,
-      "latency_ms": 59.54,
+      "latency_ms": 38.35,
       "untraceable": [],
       "grey_keys": [
         "fee",
@@ -584,7 +584,7 @@
         "P-PAY-02"
       ],
       "findings": 2,
-      "latency_ms": 59.83,
+      "latency_ms": 26.45,
       "untraceable": [],
       "grey_keys": [
         "fee",
@@ -634,7 +634,7 @@
         "P-PAY-06"
       ],
       "findings": 1,
-      "latency_ms": 18.62,
+      "latency_ms": 25.54,
       "untraceable": [],
       "grey_keys": [
         "fee",
@@ -683,7 +683,7 @@
         "P-PAY-02"
       ],
       "findings": 1,
-      "latency_ms": 41.48,
+      "latency_ms": 33.58,
       "untraceable": [],
       "grey_keys": [
         "fee",
@@ -730,7 +730,7 @@
         "P-CONTRACT-01"
       ],
       "findings": 1,
-      "latency_ms": 19.16,
+      "latency_ms": 34.52,
       "untraceable": [],
       "grey_keys": [
         "fee",
@@ -783,7 +783,7 @@
         "P-PAY-02"
       ],
       "findings": 2,
-      "latency_ms": 20.24,
+      "latency_ms": 34.46,
       "untraceable": [],
       "grey_keys": [
         "fee",
@@ -829,7 +829,7 @@
         "P-PAY-02"
       ],
       "findings": 2,
-      "latency_ms": 63.27,
+      "latency_ms": 36.74,
       "untraceable": [],
       "grey_keys": [
         "fee",
@@ -871,7 +871,7 @@
       "pattern_hit": 0,
       "patterns_extra": [],
       "findings": 2,
-      "latency_ms": 34.56,
+      "latency_ms": 47.54,
       "untraceable": [],
       "grey_keys": [
         "fee",
@@ -917,7 +917,7 @@
         "P-PAY-02"
       ],
       "findings": 2,
-      "latency_ms": 30.06,
+      "latency_ms": 48.67,
       "untraceable": [],
       "grey_keys": [
         "fee",
@@ -963,7 +963,7 @@
         "P-PAY-02"
       ],
       "findings": 1,
-      "latency_ms": 22.9,
+      "latency_ms": 36.59,
       "untraceable": [],
       "grey_keys": [
         "fee",
@@ -1010,7 +1010,7 @@
         "P-PAY-02"
       ],
       "findings": 2,
-      "latency_ms": 27.52,
+      "latency_ms": 36.37,
       "untraceable": [],
       "grey_keys": [
         "fee",
@@ -1058,7 +1058,7 @@
       "pattern_hit": 0,
       "patterns_extra": [],
       "findings": 1,
-      "latency_ms": 27.34,
+      "latency_ms": 42.48,
       "untraceable": [],
       "grey_keys": [
         "fee",
