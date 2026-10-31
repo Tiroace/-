@@ -1,9 +1,20 @@
-# 用确定性引擎生成 4 种 overall 的示例报告，写进前端 exampleReports.js
-# 优先用 data/examples/ 的标准示例；缺的（或字段过期的）用引擎现跑补齐
+# 用确定性引擎生成 4 种 overall 的对外示例报告，写进前端 exampleReports.js
+#
+# 数据源只有一处：src/scripts/example-samples.json（固定虚构样本，见 docs/22）。
+# 不再读 data/examples/、也不再读 data/testset/——示例是产品内容，不能和评测资产耦合。
+#
+# 任一异常都必须「打印原因 + exit 1」，禁止用旧示例补齐：
+#   - 样本文件不存在 / 读不动 / 不是 JSON 对象
+#   - 任一种 overall 的样本缺失或为空
+#   - 引擎抛异常
+#   - 引擎返回的 overall != key（防止规则变动后把红报告塞进 amber 的位置）
+#   - 引擎返回的 overall 不在 {red,amber,green,unknown} 里
+#
 # 用法：python src/scripts/gen-example-reports.py
 import json
 import os
 import sys
+import traceback
 
 ROOT = r"D:\qiuzhibilei"
 sys.path.insert(0, ROOT)
@@ -11,68 +22,68 @@ sys.path.insert(0, ROOT)
 from engine.pipeline import analyze  # noqa: E402
 from engine.prompts import RULES_VERSION  # noqa: E402
 
-EX_DIR = os.path.join(ROOT, "data", "examples")
+SAMPLES = os.path.join(ROOT, "src", "scripts", "example-samples.json")
 OUT_DIR = os.path.join(ROOT, "src", "src", "common")
 OUT_FILE = os.path.join(OUT_DIR, "exampleReports.js")
 
-TEST = os.path.join(ROOT, "data", "testset", "index.jsonl")
 ORES = ["red", "amber", "green", "unknown"]
 
-
-def load_standard():
-    """读 data/examples/ 的标准示例，返回 {overall: report}"""
-    out = {}
-    for overall in ORES:
-        p = os.path.join(EX_DIR, "report_%s.json" % overall)
-        if not os.path.exists(p):
-            continue
-        with open(p, encoding="utf-8") as f:
-            out[overall] = json.load(f)
-    return out
+# 文件头注释里出现的字段名，避免生成脚本自己被 prompt_version 断言误伤
+OLD_FIELD = "prompt" + "_version"
 
 
-def label_overall(row):
-    """测试集里 label 是嵌套结构 {overall, dimensions, patterns}，兼容旧的平铺写法"""
-    lab = row.get("label")
-    if isinstance(lab, dict):
-        return lab.get("overall")
-    return lab or row.get("overall")
+def die(msg):
+    """打印失败原因并以 1 退出。绝不写文件。"""
+    print("✗ 生成失败：" + msg, file=sys.stderr)
+    sys.exit(1)
 
 
-def run_engine():
-    """引擎现跑，按 overall 分类取样本"""
-    rows = [json.loads(l) for l in open(TEST, encoding="utf-8") if l.strip()]
-    picked = {}
-    for r in rows:
-        o = label_overall(r)
-        if o in ORES and o not in picked:
-            picked[o] = r
+def load_samples():
+    """只读固定样本文件；缺失/损坏/Schema 不对一律退出"""
+    if not os.path.exists(SAMPLES):
+        die("样本文件不存在：" + SAMPLES)
+    try:
+        with open(SAMPLES, encoding="utf-8") as f:
+            raw = json.load(f)
+    except Exception as e:  # noqa: BLE001
+        die("样本文件读不动或不是合法 JSON：%s（%s）" % (SAMPLES, e))
+    if not isinstance(raw, dict):
+        die("样本文件顶层必须是对象（key → 样本文本）")
+    # _开头的字段是说明，不算样本
+    return {k: v for k, v in raw.items() if not k.startswith("_")}
+
+
+def run_engine(samples):
+    """按 key 逐条跑引擎；缺样本、引擎报错、overall 对不上都退出"""
     result = {}
     for overall in ORES:
-        if overall == "unknown":
-            txt = "今天天气真好，我们去公园散步吧。"
-        else:
-            s = picked.get(overall)
-            if not s:
-                continue
-            p = os.path.join(ROOT, s.get("ocr_text") or "")
-            txt = open(p, encoding="utf-8").read() if os.path.exists(p) else ""
-        if not txt:
-            continue
+        if overall not in samples:
+            die("样本文件缺 key：%s（必须有 %s 四种）" % (overall, "/".join(ORES)))
+        text = samples[overall]
+        if not isinstance(text, str) or not text.strip():
+            die("样本 %s 内容为空或不是字符串" % overall)
         try:
-            result[overall] = analyze(ocr_text=txt, use_dedupe=False).report
+            rep = analyze(ocr_text=text, use_dedupe=False).report
         except Exception as e:  # noqa: BLE001
-            print("引擎跑失败", overall, e)
+            print(traceback.format_exc(), file=sys.stderr)
+            die("引擎处理样本 %s 时抛异常：%s" % (overall, e))
+        got = rep.get("overall")
+        if got not in ORES:
+            die("引擎对样本 %s 返回了非法 overall：%r" % (overall, got))
+        if got != overall:
+            die(
+                "样本 %s 的引擎结论是 %s，与 key 不一致（规则变动会让对外示例错位，"
+                "请换样本或调整 key）" % (overall, got)
+            )
+        result[overall] = rep
     return result
 
 
 def normalize(report, overall):
-    """统一成当前字段口径：有 rules_version（引擎当前版本号），没有 prompt_version"""
+    """统一成当前字段口径：只有 rules_version（取引擎版本号），没有旧字段"""
     r = dict(report)
-    r.pop("prompt_version", None)
-    # 版本号取引擎当前值，不硬编码；引擎输出已带 rules_version 时优先用引擎的
-    if not r.get("rules_version"):
-        r["rules_version"] = RULES_VERSION
+    r.pop(OLD_FIELD, None)
+    r["rules_version"] = RULES_VERSION
     # source 只允许 rule / pattern
     for f in r.get("findings", []):
         if f.get("source") not in ("rule", "pattern"):
@@ -84,29 +95,24 @@ def normalize(report, overall):
 
 
 def main():
-    standard = load_standard()
-    print("data/examples 标准示例:", sorted(standard.keys()) or "无")
+    samples = load_samples()
+    print("样本文件：%s（%d 条）" % (SAMPLES, len(samples)))
+    fresh = run_engine(samples)
 
-    fresh = run_engine()
-    print("引擎现跑:", sorted(fresh.keys()))
-
-    # 优先用引擎现跑的（字段最新），缺的用标准示例补
     final = {}
     for overall in ORES:
-        if overall in fresh:
-            final[overall] = normalize(fresh[overall], overall)
-        elif overall in standard:
-            final[overall] = normalize(standard[overall], overall)
-
-    if not final:
-        print("没有任何示例，退出")
-        return 1
+        n = normalize(fresh[overall], overall)
+        # normalize 之后再确认一次，防止中途被改动
+        if n.get("overall") != overall:
+            die("归一化后 %s 的 overall 变成 %r" % (overall, n.get("overall")))
+        final[overall] = n
 
     os.makedirs(OUT_DIR, exist_ok=True)
     with open(OUT_FILE, "w", encoding="utf-8") as f:
         f.write("// 示例报告数据（由 src/scripts/gen-example-reports.py 生成，不要手改）\n")
-        f.write("// 来源：确定性引擎实际跑出的报告（版本号取 engine.prompts.RULES_VERSION），与真实引擎输出同构。\n")
-        f.write("// 用途：报告页 4 种 overall 形态展示与自测；内容是测试样本，不指向任何真实企业。\n")
+        f.write("// 来源：src/scripts/example-samples.json 的固定虚构样本，逐条跑确定性引擎得到。\n")
+        f.write("// 版本号取 engine/prompts.py 的 RULES_VERSION，与真实引擎输出同构。\n")
+        f.write("// 内容是虚构的，不指向任何公司。\n")
         f.write("export const EXAMPLE_REPORTS = ")
         json.dump(final, f, ensure_ascii=False, indent=2)
         f.write(";\n\n")
@@ -115,12 +121,9 @@ def main():
         f.write("}\n")
 
     for overall in ORES:
-        r = final.get(overall)
-        if not r:
-            print("  缺", overall)
-            continue
+        r = final[overall]
         dims = ",".join("%s=%s" % (d["key"], d["level"]) for d in r.get("dimensions", []))
-        print("  %-8s overall=%s rules_version=%s findings=%d  [%s]" % (
+        print("  %-8s overall=%-8s rules_version=%s findings=%d  [%s]" % (
             overall, r.get("overall"), r.get("rules_version"), len(r.get("findings", [])), dims))
 
     print("\n已写入:", OUT_FILE, os.path.getsize(OUT_FILE), "bytes")

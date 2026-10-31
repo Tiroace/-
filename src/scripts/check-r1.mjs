@@ -283,28 +283,103 @@ if (!fs.existsSync(DIST)) {
   AI_RE_TEST(docSrc) ? fail('检查规则说明页仍含 AI 字样') : pass('检查规则说明页无 AI 字样');
 }
 
-// 22. 示例报告与引擎契约对齐（D3）：版本号不写死，必须等于 engine/prompts.py 的 RULES_VERSION
+// 22. 示例报告与引擎契约对齐（D3，docs/22）：只认 example-samples.json 跑出来的结果
+// 旧版这组断言有两个空档：只查「所有版本都等于引擎版本」——3 份也能过；
+// 「4 种 overall 齐全」是全文搜字符串——维度灯里本来就有 red/amber/green，错位也能过。
+// 所以这里改成解析 EXAMPLE_REPORTS 的真实结构来查，不再靠字符串搜索。
 {
   const exSrc = fs.readFileSync(path.join(SRC, 'common/exampleReports.js'), 'utf8');
   const engineVer = (fs.readFileSync('D:/qiuzhibilei/engine/prompts.py', 'utf8').match(/^RULES_VERSION\s*=\s*"([^"]+)"/m) || [])[1];
+  const WANT = ['red', 'amber', 'green', 'unknown'];
+
+  // 引擎版本读不到就没法比，后续全部跳过（只报一条失败，避免刷屏）
   if (!engineVer) {
     fail('读取引擎 RULES_VERSION', 'engine/prompts.py 里没找到 RULES_VERSION');
   } else {
-    const versions = [...exSrc.matchAll(/"rules_version":\s*"([^"]*)"/g)].map((m) => m[1]);
-    const bad = [...new Set(versions.filter((v) => v !== engineVer))];
-    if (!versions.length) fail('示例报告带 rules_version', '一条都没有');
-    else if (bad.length) fail('示例报告版本与引擎一致（' + engineVer + '）', '不一致：' + bad.join(', '));
-    else pass('示例报告版本与引擎一致（' + engineVer + '，共 ' + versions.length + ' 份）');
-    exSrc.includes('prompt_version') ? fail('示例报告有 prompt_version') : pass('示例报告无 prompt_version');
-    // 示例必须是引擎现跑的，不能退化成读 data/examples 里的旧标准示例
-    ["red", "amber", "green", "unknown"].every((o) => versions.length && exSrc.includes('"' + o + '"'))
-      ? pass('示例报告 4 种 overall 齐全')
-      : fail('示例报告缺 overall');
+    // 把 export const EXAMPLE_REPORTS = {...}; 里的对象抠出来解析
+    let data = null;
+    try {
+      const m = exSrc.match(/export const EXAMPLE_REPORTS\s*=\s*(\{[\s\S]*?\n\});/);
+      if (!m) throw new Error('没匹配到 EXAMPLE_REPORTS 字面量');
+      data = JSON.parse(m[1]);
+    } catch (e) {
+      fail('解析 exampleReports.js 结构', e.message);
+    }
+
+    if (!data) {
+      // 结构都解析不了，后面的检查没有意义
+    } else {
+      const keys = Object.keys(data);
+
+      // (1) 恰好 4 份，key 集合 = 四种 overall
+      const keyOk = keys.length === 4 && WANT.every((k) => keys.includes(k));
+      keyOk
+        ? pass('示例报告恰好 4 份，key = red/amber/green/unknown')
+        : fail('示例报告恰好 4 份', '实际 key：' + keys.join(',') || '（空）');
+
+      // (2) 每份的 overall 与它所在 key 一致，且四种各出现 1 次
+      const mismatched = WANT.filter((k) => data[k] && data[k].overall !== k).map((k) => k + '→' + data[k].overall);
+      mismatched.length
+        ? fail('示例 overall 与 key 一一对应', '错位：' + mismatched.join(', '))
+        : pass('示例 overall 与 key 一一对应');
+      const seen = WANT.map((k) => (data[k] ? data[k].overall : '（缺）'));
+      const counts = {};
+      seen.forEach((o) => { counts[o] = (counts[o] || 0) + 1; });
+      const dup = Object.keys(counts).filter((o) => counts[o] !== 1);
+      dup.length
+        ? fail('示例 overall 四种各 1 份', '重复或缺失：' + dup.map((o) => o + '×' + counts[o]).join(', '))
+        : pass('示例 overall 四种各 1 份');
+
+      // (3) rules_version 条目数 = 4，且全部等于引擎版本
+      const rv = WANT.map((k) => (data[k] || {}).rules_version);
+      const rvMissing = rv.filter((v) => !v).length;
+      const rvBad = [...new Set(rv.filter((v) => v && v !== engineVer))];
+      if (rvMissing) fail('示例 rules_version 齐全', rvMissing + ' 份缺失');
+      else if (rvBad.length) fail('示例 rules_version = 引擎版本（' + engineVer + '）', '不一致：' + rvBad.join(', '));
+      else if (rv.length !== 4) fail('示例 rules_version 条目数 = 4', '实际 ' + rv.length);
+      else pass('示例 rules_version 条目数 = 4 且全部 = ' + engineVer);
+
+      // (4) 示例里的公司名必须含「示例」（合规：虚构内容不得指向真实公司）
+      const texts = [];
+      for (const k of WANT) {
+        const r = data[k] || {};
+        for (const f of r.findings || []) texts.push(f.evidence || '', f.context || '');
+        texts.push(r.summary || '');
+      }
+      const companyRe = /公司名称[：:]\s*([^\s，,；;]+)/;
+      const names = texts.map((t) => (t.match(companyRe) || [])[1]).filter(Boolean);
+      const badNames = [...new Set(names.filter((n) => !n.includes('示例')))];
+      if (!names.length) {
+        // 没有写公司名也是一种合规安全状态，明确记录而不是含糊通过
+        pass('示例未出现公司名（无需含「示例」）');
+      } else if (badNames.length) {
+        fail('示例公司名含「示例」', '不合规：' + badNames.join(', '));
+      } else {
+        pass('示例公司名含「示例」（' + [...new Set(names)].join(', ') + '）');
+      }
+
+      exSrc.includes('prompt_version') ? fail('示例报告有 prompt_version') : pass('示例报告无 prompt_version');
+    }
   }
+
   const repSrc = fs.readFileSync(path.join(SRC, 'pages/report/index.vue'), 'utf8');
   /rules_version:\s*'v\d/.test(repSrc)
     ? fail('报告页未写死版本号', "发现 rules_version: 'v...'")
     : pass('报告页未写死版本号');
+
+  // (5) 生成器不得再依赖 data/examples 回退（docs/22 §4）
+  const genSrc = fs.readFileSync('D:/qiuzhibilei/src/scripts/gen-example-reports.py', 'utf8');
+  const codeOnly = genSrc.split('\n').filter((l) => !l.trim().startsWith('#')).join('\n');
+  const hits = [];
+  if (/data[\/\\]examples|load_standard/.test(codeOnly)) hits.push('data/examples 回退/load_standard');
+  if (!codeOnly.includes('example-samples.json')) hits.push('没读 example-samples.json');
+  hits.length
+    ? fail('生成器只读固定样本', hits.join('；'))
+    : pass('生成器只读 example-samples.json（无从旧示例回退）');
+  // 生成器必须把 overall != key 当成致命错误
+  /got\s*!=\s*overall/.test(codeOnly)
+    ? pass('生成器断言 overall == key')
+    : fail('生成器未断言 overall == key');
 }
 
 function AI_RE_TEST(t) {
