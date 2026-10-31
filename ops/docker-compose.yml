@@ -31,6 +31,10 @@ services:
       - "127.0.0.1:8000:8000"
     volumes:
       - api_data:/data
+      # 日志持久卷（必须）：backend/app/logging_setup.py 按 project_root 推导日志目录，
+      # 容器内 project_root=/app，所以 app.log 与 deletion.log 写在 /app/var/log。
+      # 不挂这个卷，容器一重建日志就全丢（合规 R-04「留存 6 个月」当场不成立）。
+      - api_logs:/app/var/log
     depends_on:
       mysql:
         condition: service_healthy
@@ -111,5 +115,7 @@ services:
 
 volumes:
   api_data:
+  # 应用日志与截图删除日志（app.log / deletion.log），容器重建不丢
+  api_logs:
   mysql_data:
   redis_data:
