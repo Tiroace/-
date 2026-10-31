@@ -271,27 +271,51 @@ def main() -> int:
 
     # ---------------- 落盘：每次运行保存独立快照，不覆盖历史
     #
-    # 为什么不能覆盖：这份报告的价值在于「什么时候的什么结论」。D30 修订前
-    # 有 6 组冲突、修订后剩 3 组，两份都必须留着；只留一份的话，后来人无法
+    # 为什么不能覆盖：这份报告的价值在于「什么时候的什么结论」。修订前 6 组冲突、
+    # D30 后 3 组、D32 后 0 组，每一份都必须留着；只留一份的话，后来人无法
     # 判断某个指标是基于哪版标注算的。
+    #
+    # 【2026-10-31 实测踩坑】最初用「D30 是否已生效」来判断阶段名，结果 D32 跑完
+    # 仍被判成「D30修订后」，把真·D30 快照覆盖了（已从 git 2637d04 找回）。
+    # 现在改成：结合标注状态 + 实际冲突组数推断阶段，且**目标文件已存在就加序号**，
+    # 任何时候都不覆盖已有快照。
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    phase = "D30修订后" if not d30_pending else "D30修订前"
+    n_conflict = len(conflicts) + len(near_conflicts)
+    if d30_pending:
+        phase = "修订前"
+    elif n_conflict == 0:
+        phase = "D32修订后"
+    elif n_conflict <= 3:
+        phase = "D30修订后"
+    else:
+        phase = f"冲突{n_conflict}组"
     snap_name = f"标注一致性审计-2026-10-31-{phase}.md"
     snap_path = OUT.parent / snap_name
+    seq = 2
+    while snap_path.exists():
+        snap_name = f"标注一致性审计-2026-10-31-{phase}-{seq}.md"
+        snap_path = OUT.parent / snap_name
+        seq += 1
     content = "\n".join(lines) + "\n"
     snap_path.write_text(content, encoding="utf-8")
 
     # 兼容旧路径：最新一次的结论也写到约定文件名，方便别人直接打开
     OUT.write_text(content, encoding="utf-8")
 
-    # 两份快照的对照表（修订前那份已归档为固定文件名）
-    before = OUT.parent / "标注一致性审计-2026-10-31-修订前18-21.md"
+    # 跨所有快照生成对照表：扫 reports/ 下所有快照文件，从正文里抓数字
+    import re as _re
+
     rows_md = []
-    if before.is_file():
-        rows_md.append("| 修订前（18:21） | 6 | 见文件 | `标注一致性审计-2026-10-31-修订前18-21.md` |")
-    rows_md.append(
-        f"| {phase}（{snap}） | {len(conflicts)} | {len(near_conflicts)} | `{snap_name}` |"
-    )
+    for p in sorted(OUT.parent.glob("标注一致性审计-2026-10-31-*.md")):
+        if p.name.startswith("标注一致性审计-索引"):
+            continue
+        txt = p.read_text(encoding="utf-8")
+        m1 = _re.search(r"## 一、正文完全相同但标注不一致\s+\*\*(\d+) 组\*\*", txt)
+        m2 = _re.search(r"## 二、近重复[^\n]*\n\s+\*\*(\d+) 组\*\*", txt)
+        n1 = m1.group(1) if m1 else ("0" if "未发现正文完全相同" in txt else "?")
+        n2 = m2.group(1) if m2 else ("0" if "未发现「只差一行" in txt else "?")
+        stage = p.stem.replace("标注一致性审计-2026-10-31-", "")
+        rows_md.append(f"| {stage} | {n1} | {n2} | `{p.name}` |")
     index_path = OUT.parent / "标注一致性审计-索引.md"
     summary = [
         "# 标注一致性审计 · 快照对照",
@@ -302,7 +326,8 @@ def main() -> int:
         "| --- | ---: | ---: | --- |",
         *rows_md,
         "",
-        "> 修订前那份的「近重复冲突组」数见该文件正文第二节。",
+        "> 冲突收敛路径：D30 统一「无经验+月入X」判黄 → D32 把「口头承诺未签合同」"
+        "从 pay 归到 contract → 0 组。每次修订后重跑本脚本即可看到收敛。",
     ]
     index_path.write_text("\n".join(summary) + "\n", encoding="utf-8")
 
