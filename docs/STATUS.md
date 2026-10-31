@@ -11,7 +11,7 @@
 | 规则/套路库 | rules/（52 条规则、50 个套路、36 组变形写法） | `rules_version=v3.0`（lexicon 数据版本 3.2）；D30 后 R-BAIT-01 判黄、R-DISCRIM-01 去掉误加关键词 |
 | 后端 | 接口齐全 + 社区模块（开关关） | `backend_smoke` 108/108；`pytest backend/tests` 27 passed；**R-03 截图定时清理、R-04 日志落盘 180 天已落地** |
 | 测试 | 全量 pytest | **319 passed / 7 skipped / 1 xpassed**，0 失败；快速冒烟 `-m smoke` 48 条 <1 分钟 |
-| 小程序前端 | A 组全绿 | 5 套自检 176 项；正式包无 dev 页、无「AI」字样、文案 0 时效承诺 |
+| 小程序前端 | A 组全绿 | 4 套自检 **181 项全绿**（check:r1 52 / test 47 / check:report 33 / check:r3 38）+ 构建后检查 15 项；示例报告改为固定样本驱动、断言收紧；正式包无 dev 页、无「AI」字样、文案 0 时效承诺；appid 仍 touristappid |
 | 合规/文案 | 文档齐（隐私政策/协议/社区规范/提审清单/敏感词表） | 免责声明 D20、绿灯标题 D16、12333 口径 D21 已统一 |
 | 运维 | **D7 前 4 项已交付**（成本表缺 ECS 实例单价，标待核实） | `ops/` 4 份文档 + compose `config` exit=0 + 本机一键启动实测 200 + 备份恢复演练 `integrity_check ok` |
 | 合规助理 | **D7 交付已落盘**（2026-10-31） | 合规清单 12 条 + 5 份文书复核 + 提审自查 5 组 + 政策简报 W44；**卡点 1 条：类目资质** |
@@ -27,6 +27,7 @@
 7. 社区第 0 项：举报隐藏 → 人工复核队列 → `restore` 恢复；两条防护（restore 仅限复核队列、举报按轮次统计）。
 8. 归档 `data/examples/` 旧 v2 示例到 `_archive/`，防止被读回来当兜底，提交 `ac20a81`。
 9. 发帖页文案：「审核通过后公开」，全项目无审核时效承诺。
+10. **前端 D3 收尾（示例报告加固）**：`gen-example-reports.py` 只读 `src/scripts/example-samples.json`，删除 `data/examples` 回退；样本缺失/坏 JSON/引擎异常/`overall != key` 一律打印原因并 `exit 1`、不写文件。4 份示例全部改为样本现跑、`rules_version=v3.0`。`check-r1` 第 22 组改为解析真实结构（恰好 4 份、overall 与 key 一一对应、四种各 1 份、版本条目数=4、公司名含「示例」、生成器无回退、生成器断言 overall==key），共 8 项。重拍 green/unknown 示例截图（首页入口 + 报告页，各带「示例报告 · 内容是虚构的」标记）。提交 `aa0fe92` → 合并 `f873dc4`。
 10. Git：本地仓库初始化、目录重组（src/、rules/）、.gitignore/.env.example/pre-commit/CI/文档骨架。
 
 ## 三、下一步（按 7 天排期）
