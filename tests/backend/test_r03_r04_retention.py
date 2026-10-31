@@ -2,7 +2,7 @@
 
 R-03：截图「24 小时删除」必须由定时任务真正删文件、删记录并留删除日志，
       不能只有 expires_at 字段（那样承诺不成立）。
-R-04：日志必须落盘并按天轮转、保留 180 天，不能只打 console。
+R-04：日志必须落盘并按天轮转、保留 190 天（≥6 个日历月），不能只打 console。
 """
 from __future__ import annotations
 
@@ -165,7 +165,7 @@ def clean_logging():
     _drop_qbl_handlers()
 
 
-def test_日志落盘且按天轮转保留180天(tmp_path, clean_logging):
+def test_日志落盘且按天轮转保留190天(tmp_path, clean_logging):
     log_path = setup_logging(tmp_path)
     logging.getLogger("qbl.r04").info("R04 write test")
     handler = next(h for h in logging.getLogger().handlers if getattr(h, "_qbl_file_handler", False))
@@ -174,9 +174,12 @@ def test_日志落盘且按天轮转保留180天(tmp_path, clean_logging):
 
     assert log_path.is_file(), "日志没落盘，进程一停就没了"
     assert "R04 write test" in log_path.read_text(encoding="utf-8")
-    # ≥180 天是下限；实际取 190，因为 backupCount=180 只能覆盖约 181 天，
-    # 而「六个月」按日历最长 184 天，181 不严格够。
-    assert handler.backupCount == RETENTION_DAYS >= 180, "日志留存必须 ≥180 天（网络安全法要求 6 个月）"
+    # 取 190 不是 180：backupCount=N 实际保留 N+1 个文件（合规助理实测），
+    # 190 → 191 天覆盖；6 个日历月最长 184 天（3–8 月），余 7 天。
+    # 180 → 181 天，在 182–184 区间差 1–3 天，所以 180 不严格够。
+    assert RETENTION_DAYS == 190, f"留存天数应为 190，实际 {RETENTION_DAYS}"
+    assert handler.backupCount == RETENTION_DAYS, "backupCount 必须跟常量一致"
+    assert RETENTION_DAYS + 1 >= 184, "N+1 个文件必须覆盖最长的 6 个日历月（184 天）"
     assert handler.when.upper() == "MIDNIGHT", "应按天轮转"
 
 
