@@ -38,3 +38,7 @@ Thumbs.db
 .idea/
 .vscode/
 *.log
+
+# 真机预览二维码（临时入口，含有时效链接，不入库）
+reports/真机预览二维码-*.jpg
+reports/_qr-run.log*
