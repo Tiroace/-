@@ -6,6 +6,7 @@ export const EXAMPLE_REPORTS = {
   "red": {
     "is_job_posting": true,
     "overall": "red",
+    "company": "示例（上海）科技有限公司",
     "summary": "有几处不对劲，先别急着去",
     "dimensions": [
       {

@@ -79,7 +79,8 @@
       </view>
 
       <!-- ⑦b 公司核实卡片：从截图文字里提取公司全称，一键复制 + 引导去官方渠道自查
-           不接第三方数据，只提供复制和跳转指引 -->
+           不接第三方数据，只提供复制和跳转指引
+           两态（06 号 §三 #11）：有全称 → 复制全称 + 两个官网；无全称 → 复制一句问 HR 的话 -->
       <view v-if="companyName" class="card corp-card">
         <view class="corp-head">
           <text class="corp-title">查一下这家公司</text>
@@ -103,7 +104,15 @@
           </view>
         </view>
       </view>
-
+      <view v-else class="card corp-card">
+        <view class="corp-head">
+          <text class="corp-title">查一下这家公司</text>
+        </view>
+        <text class="corp-tip">{{ ASK_HR_SUB }}</text>
+        <view class="corp-copy" @tap="copyAskHr">
+          <text>{{ askHrCopied ? '已复制' : '复制这句话问 HR' }}</text>
+        </view>
+      </view>
       <!-- ⑧ 已经交了钱？只在 overall=red 时出现 -->
       <view v-if="overall === 'red'" class="card money-card">
         <text class="money-title">已经交了钱？</text>
@@ -143,7 +152,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import SignalLamp from '@/components/SignalLamp.vue';
 import { fetchAnalysis } from '@/services/api.js';
 import { getExampleReport } from '@/common/exampleReports.js';
@@ -304,6 +313,29 @@ function copyCompany() {
   });
 }
 
+// 无全称态文案：产品定稿（2026-11-03），一字不改。
+// 复制内容不加引号、不额外包装：原文自带问号，用户直接粘进聊天框发给 HR。
+const ASK_HR_SUB = '还没拿到公司全称。把这句话发给 HR，拿到全称再回来查。';
+const ASK_HR_TEXT = '请问贵公司全称是什么？我核实一下公司信息。';
+
+// 复制后按钮变「已复制」并保持 2 秒（产品红线：否则用户会以为没点上反复点）
+const askHrCopied = ref(false);
+let askHrTimer = null;
+
+function copyAskHr() {
+  uni.setClipboardData({
+    data: ASK_HR_TEXT,
+    success: () => {
+      askHrCopied.value = true;
+      uni.showToast({ title: '已复制', icon: 'none' });
+      if (askHrTimer) clearTimeout(askHrTimer);
+      askHrTimer = setTimeout(() => {
+        askHrCopied.value = false;
+      }, 2000);
+    },
+  });
+}
+
 function openVerifySite(key) {
   const site = VERIFY_SITES[key];
   if (!site) return;
@@ -400,6 +432,10 @@ onMounted(() => {
   // 没有 task_id：用示例数据兜底展示
   const rep = getExampleReport('red');
   if (rep) report.value = rep;
+});
+
+onUnmounted(() => {
+  if (askHrTimer) clearTimeout(askHrTimer);
 });
 
 function gotoFeedback() {
