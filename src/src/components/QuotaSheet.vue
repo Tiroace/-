@@ -27,11 +27,17 @@
         </view>
         <view class="grow">
           <text class="opt-t">今天看广告的次数用完了</text>
-          <text class="opt-s">明天再来，或者看看会员</text>
+          <text class="opt-s">明天再来，次数每天刷新</text>
         </view>
       </view>
 
-      <!-- 会员卡：iOS 不可付费时整块不显示，且不出现任何价格字眼 -->
+      <!-- 会员卡
+           【D39】个人主体不能开微信虚拟支付 → 纯免费 + 流量主广告。
+           这里是编译期条件编译，不是 v-if：v-if 只影响渲染，文案照样进包，
+           审核能看到「开通会员 / 周卡 ¥」这类字样，等于把未开放功能带上了架。
+           所以用 #ifdef QBL_MEMBER_ON 包住，提审包里这段 wxml 根本不存在。
+           将来主体变更成企业、支付能开了：定义 QBL_MEMBER_ON 并重新提审即可。 -->
+      <!-- #ifdef QBL_MEMBER_ON -->
       <view v-if="memberAvailable" class="vip">
         <view class="vip-head">
           <view class="icon-44 gold">
@@ -46,6 +52,7 @@
       </view>
 
       <text v-if="memberAvailable" class="note">会员是一次性购买，不会自动续费。</text>
+      <!-- #endif -->
     </view>
   </view>
 </template>

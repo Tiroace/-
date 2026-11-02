@@ -103,6 +103,8 @@
     </view>
 
     <!-- 次数用完弹窗 -->
+    <!-- D39：会员关闭时 member-available=false，弹窗里整块会员卡与价格都不渲染，
+         只剩「看广告换 1 次」和「明天再来」 -->
     <QuotaSheet
       :visible="showQuota"
       :remaining-ad="adRemaining"
@@ -126,7 +128,7 @@ import QuotaSheet from '@/components/QuotaSheet.vue';
 import { ensureLogin, getUser, refreshUser } from '@/services/session.js';
 import { createAnalysis, uploadImage, claimAdReward, newRequestId, ApiError } from '@/services/api.js';
 import { runRewardedFlow, canTriggerAd } from '@/common/adGuard.js';
-import { canBuyMember } from '@/common/entitlement.js';
+import { canBuyMember, isMembershipVisible } from '@/common/entitlement.js';
 import { getAdUnitId } from '@/common/config.js';
 import { DISCLAIMER_TEXT } from '@/common/constants.js';
 import { SHARE_TITLE } from '@/common/brand.js';
@@ -330,6 +332,8 @@ function onWatchAd() {
 }
 
 function gotoMember() {
+  // D39：会员关闭时不做任何跳转（页面上也点不到，这里兜底防误触发）
+  if (!isMembershipVisible()) return;
   showQuota.value = false;
   uni.navigateTo({ url: '/pages/member/index' });
 }

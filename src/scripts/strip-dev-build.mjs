@@ -22,6 +22,14 @@ const IS_REVIEW = MODE === 'review';
 // 只在正式包里该消失的页面
 const DEV_ONLY_PAGES = ['pages/dev/index'];
 
+// 【D39】会员页：个人主体不能开微信虚拟支付，收入模式改为纯免费 + 流量主广告。
+// 会员页从提审包里整个删掉（不是只隐藏入口）——页面上有价格和《会员服务协议》，
+// 只要在包里就属于「未开放功能」，会被审核挑出来。
+// config.js 的 MEMBERSHIP_ENABLED=false 负责渲染层不出现任何会员/价格字样；
+// 这里负责连页面文件都不进包。两处一起才算「下架」。
+const MEMBER_REVIEW_STRIP = true; // 主体变更成企业、支付能开时改回 false
+const MEMBER_ONLY_PAGES = ['pages/member/index'];
+
 // 提审包（BUG-20261103-02）：tabBar 只保留「检查」「我的」，广场不进 tabBar。
 // 页面文件不删，代码不删——只是入口不可达。
 const REVIEW_TAB_ALLOW = ['pages/index/index', 'pages/mine/index'];
@@ -55,8 +63,10 @@ if (!fs.existsSync(appJsonPath)) {
   process.exit(1);
 }
 const appJson = readJson(appJsonPath);
+// 【D39】会员页只在 MEMBERSHIP_ON 时才留在包里
+const STRIP_PAGES = MEMBER_REVIEW_STRIP ? DEV_ONLY_PAGES.concat(MEMBER_ONLY_PAGES) : DEV_ONLY_PAGES;
 const before = (appJson.pages || []).length;
-appJson.pages = (appJson.pages || []).filter((p) => !DEV_ONLY_PAGES.includes(p));
+appJson.pages = (appJson.pages || []).filter((p) => !STRIP_PAGES.includes(p));
 if (appJson.pages.length !== before) {
   writeJson(appJsonPath, appJson);
   changed += 1;
@@ -92,7 +102,7 @@ if (IS_REVIEW && appJson.tabBar && Array.isArray(appJson.tabBar.list)) {
 }
 
 // ---- 2. 删产物目录 ----
-for (const page of DEV_ONLY_PAGES) {
+for (const page of STRIP_PAGES) {
   const dir = path.join(DIST, path.dirname(page));
   if (fs.existsSync(dir)) {
     fs.rmSync(dir, { recursive: true, force: true });

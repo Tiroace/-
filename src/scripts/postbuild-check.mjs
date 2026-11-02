@@ -106,7 +106,8 @@ corpJs.includes('国家企业信用信息公示系统') ? ok('公司核实卡在
 
 // ---------- 6. 页面数与关键页 ----------
 if (appJson) {
-  const must = ['pages/index/index', 'pages/report/index', 'pages/mine/index', 'pages/member/index'];
+  // 【D39】会员页已经下架，不再是关键页；它的缺席由第 9 组断言反向锁住
+  const must = ['pages/index/index', 'pages/report/index', 'pages/mine/index'];
   const missing = must.filter((p) => !(appJson.pages || []).includes(p));
   missing.length ? bad('缺关键页面：' + missing.join(', ')) : ok('关键页面齐全（' + appJson.pages.length + ' 页）');
 }
@@ -160,6 +161,82 @@ const reportWxmlEarly = path.join(DIST, 'pages/report/index.wxml');
 if (fs.existsSync(reportWxmlEarly)) {
   const w = fs.readFileSync(reportWxmlEarly, 'utf8');
   /模型：|备案号|deepseek/i.test(w) ? bad('报告页仍展示模型名/备案号') : ok('报告页不展示模型名与备案号');
+}
+
+// ---------- 9. 【D39】会员/收费下架：个人主体 + 纯免费 + 流量主 ----------
+// 依据：个人主体不能开通微信虚拟支付，收入模式改为纯免费 + 广告。
+// 会员页、价格、《会员服务协议》都不许出现在提审包里，否则等于「未开放功能」上架。
+{
+  // 9a. 会员页不能进包
+  const hasMemberPage = (appJson && (appJson.pages || []).includes('pages/member/index'));
+  hasMemberPage ? bad('【D39】包内仍有 pages/member/index') : ok('【D39】包内无 pages/member/index');
+
+  const memberDir = path.join(DIST, 'pages', 'member');
+  fs.existsSync(memberDir) ? bad('【D39】包内仍有 pages/member 目录') : ok('【D39】包内无 pages/member 目录');
+
+  // 9b. 上屏文案扫价格与收费字样。
+  // 只扫 wxml（用户看得见）+ json（配置文案）；js 里有变量名/接口注释，
+  // 而且报价字段是服务端下发的，扫 js 会误报。
+  const PRICE_PATTERNS = [
+    { re: /¥\s*\d/, name: '¥ 价格' },
+    { re: /￥\s*\d/, name: '￥ 价格' },
+    { re: /\d+(\.\d+)?\s*元\s*\/\s*(月|天|次|年)/, name: '元/月 类价格' },
+    { re: /开通会员/, name: '开通会员' },
+    { re: /会员服务协议/, name: '《会员服务协议》' },
+    { re: /会员卡/, name: '会员卡' },
+    { re: /周卡|月卡|季卡|年卡/, name: '会员套餐名' },
+    { re: /付费|充值|购买会员/, name: '付费类字样' },
+  ];
+  const priceHits = [];
+  for (const f of allFiles) {
+    if (!/\.(wxml|json)$/.test(f)) continue;
+    // app.json / project.config.json 是框架配置，不含上屏文案
+    const base = path.basename(f);
+    if (base === 'app.json' || base === 'project.config.json' || base === 'project.private.config.json') continue;
+    const t = fs.readFileSync(f, 'utf8');
+    for (const p of PRICE_PATTERNS) {
+      if (p.re.test(t)) priceHits.push(path.relative(DIST, f) + ' 含「' + p.name + '」');
+    }
+  }
+  priceHits.length
+    ? bad('【D39】包内无价格/会员收费字样', [...new Set(priceHits)].slice(0, 6).join('; '))
+    : ok('【D39】包内无价格/会员收费字样（¥价格、开通会员、会员服务协议、周卡月卡、付费充值）');
+
+  // 9c. 配置层开关必须是关的（防有人把 MEMBERSHIP_ENABLED 改回 true 却没走提审）
+  // 编译期会把常量折叠掉，产物里没有 MEMBERSHIP_ENABLED 这个名字，
+  // 只剩函数体。所以判据是编译后的 isMembershipVisible / canBuyMember 必须恒返回 !1。
+  const entFile = allFiles.find((f) => /common[\/\\]entitlement\.js$/.test(f));
+  if (!entFile) {
+    bad('【D39】包内找不到 entitlement 模块');
+  } else {
+    const src = fs.readFileSync(entFile, 'utf8');
+    const vis = /isMembershipVisible\s*=\s*function\s*\(\)\s*\{\s*return\s*(!1|false)\s*;?\s*\}/.test(src);
+    const buy = /canBuyMember\s*=\s*function\s*\(\)\s*\{\s*return\s*(!1|false)\s*;?\s*\}/.test(src);
+    vis && buy
+      ? ok('【D39】编译后 isMembershipVisible / canBuyMember 恒为 false')
+      : bad('【D39】会员可见性开关没关死', 'isMembershipVisible恒false=' + vis + ' canBuyMember恒false=' + buy);
+  }
+
+  // 9d. QuotaSheet 的会员卡必须是编译期剔除（#ifdef QBL_MEMBER_ON），不能只靠 v-if：
+  //     v-if 只影响渲染，wxml 里的「开通会员 / 周卡 ¥」照样进包，审核能看到。
+  const qsWxml = path.join(DIST, 'components', 'QuotaSheet.wxml');
+  if (!fs.existsSync(qsWxml)) {
+    bad('【D39】包内找不到 QuotaSheet.wxml');
+  } else {
+    const w = fs.readFileSync(qsWxml, 'utf8');
+    /开通会员|周卡|会员服务协议/.test(w)
+      ? bad('【D39】QuotaSheet 仍含会员文案', '应改用 #ifdef QBL_MEMBER_ON 编译期剔除')
+      : ok('【D39】QuotaSheet 无会员卡文案（编译期已剔除）');
+  }
+
+  // 9e. 源码里会员卡必须用条件编译包住（防止后来有人改成 v-if 又混进包）
+  const qsSrc = path.join('D:/qiuzhibilei/src/src', 'components', 'QuotaSheet.vue');
+  if (fs.existsSync(qsSrc)) {
+    const s = fs.readFileSync(qsSrc, 'utf8');
+    /#ifdef QBL_MEMBER_ON/.test(s) && /#endif/.test(s)
+      ? ok('【D39】源码 QuotaSheet 会员卡已用 #ifdef 包住')
+      : bad('【D39】源码 QuotaSheet 会员卡没用条件编译');
+  }
 }
 
 // 输出
