@@ -9,7 +9,7 @@
 //
 // 后端联调：在「我的 → 开发自测」里打开「使用真后端」即可切走，页面代码不用动，mock 分支保留。
 import { getExampleReport } from '@/common/exampleReports.js';
-import { STORAGE_KEYS } from '@/common/config.js';
+import { STORAGE_KEYS, useMock } from '@/common/config.js';
 
 const MOCK_DELAY = 220;
 
@@ -61,9 +61,25 @@ function buildReport(overallKey) {
   return getExampleReport(overallKey) || getExampleReport('red');
 }
 
+// 提审截图用：本地存储可强制指定 overall（red/amber/green/unknown），其余值忽略。
+// 只在 mock 链路生效：本函数只被 mock 的创建分析调用；
+// 正式模式（useMock()===false）不读，且 config.js 会清掉该键（改动清单 1 · 约束 4）。
+function forcedOverall() {
+  try {
+    const v = String(uni.getStorageSync(STORAGE_KEYS.mockForceOverall) || '').trim();
+    return OVERALL_KEYS.includes(v) ? v : '';
+  } catch (e) {
+    return '';
+  }
+}
+
 // 按图片哈希稳定分到不同 overall，演示「同样的图给同样的报告」
 function pickReportId(hash) {
   const keys = OVERALL_KEYS;
+  if (useMock()) {
+    const forced = forcedOverall();
+    if (forced) return forced;
+  }
   let sum = 0;
   const s = String(hash || '');
   for (let i = 0; i < s.length; i += 1) sum = (sum + s.charCodeAt(i) * (i + 1)) % 9973;

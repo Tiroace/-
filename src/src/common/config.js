@@ -29,6 +29,8 @@ export const STORAGE_KEYS = {
   mockStartRunning: 'qiuzhibilei_mock_start_running',
   // mock 轮询强制返回 background_mode=true
   mockBackground: 'qiuzhibilei_mock_background',
+  // mock 报告结论强制指定：red/amber/green/unknown，其余值一律忽略（提审截图用）
+  mockForceOverall: 'qiuzhibilei_mock_force_overall',
 };
 
 function readStorage(key) {
@@ -41,8 +43,26 @@ function readStorage(key) {
 
 // 是否使用 mock 数据层：默认 true，保留 mock 分支（测试依赖它）。
 // 真后端联调时通过「开发自测」页或本地存储切过去。
+//
+// 安全（改动清单 1 · 约束 4）：mock 专用开关写在本地存储里，会跟着设备走。
+// 正式模式（useRealBackend=1）下主动清掉「强制报告结论」开关，
+// 保证设备上不残留一个能人为指定「这份报告没有风险」的键。
+// 切回 mock 后重新布防，下次再进正式模式仍会清理。
+let mockForceOverallCleared = false;
 export function useMock() {
-  return readStorage(STORAGE_KEYS.useRealBackend) !== '1';
+  if (readStorage(STORAGE_KEYS.useRealBackend) === '1') {
+    if (!mockForceOverallCleared) {
+      try {
+        uni.removeStorageSync(STORAGE_KEYS.mockForceOverall);
+      } catch (e) {
+        // 存储不可用时忽略：正式模式本来就不读这个键
+      }
+      mockForceOverallCleared = true;
+    }
+    return false;
+  }
+  mockForceOverallCleared = false;
+  return true;
 }
 
 // 当前生效的接口基地址
