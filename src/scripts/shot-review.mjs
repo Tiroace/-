@@ -8,12 +8,27 @@
 //
 // 用法：node src/scripts/shot-review.mjs
 // 依赖：cli.bat auto --auto-port 9422；automator 在 tests/node_modules
+//
+// ！职责提醒（Chief 2026-11-03）：IDE 的 open / auto 归软件测试者操作。
+//   本脚本只「连接」9422，不启动 IDE、不占端口；端口上是别人开的自动化时，
+//   脚本会提示一句，但不会拦着不跑（测试者按 docs/18 手册调用时要能直接跑）。
+//   前端日常只需 `npm run build:mp-weixin`，不需要这个脚本。
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
+import net from 'node:net';
 
 const require = createRequire('D:/qiuzhibilei/tests/');
 const automator = require('miniprogram-automator');
+
+// 端口可用性探测：同时给测试者一个明确提示，避免两边同时自动化打架
+function portBusy(port) {
+  return new Promise((resolve) => {
+    const s = net.connect({ host: '127.0.0.1', port }, () => { s.destroy(); resolve(true); });
+    s.on('error', () => resolve(false));
+    s.setTimeout(1200, () => { s.destroy(); resolve(false); });
+  });
+}
 
 const WS = process.env.QBL_WS || 'ws://127.0.0.1:9422';
 // 提审截图单独放一个目录，和日常改版截图分开，避免混杂
@@ -111,7 +126,18 @@ const NEED_12333 = {
 };
 
 async function main() {
-  console.log('连接 ' + WS + '\n');
+  // 端口自检：没开自动化就早点说清楚，别等 6 张图各重试 3 次才失败
+  const port = Number((WS.match(/:(\d+)$/) || [])[1] || 9422);
+  if (!(await portBusy(port))) {
+    console.error(
+      '✗ 连不上自动化端口 ' + port + '。\n' +
+      '  IDE 的 open/auto 归软件测试者管（docs/18 手册），请先让对方把自动化开起来，\n' +
+      '  或按 docs/18 第 1 步自行拉起：\n' +
+      '  cli.bat auto --project "...\\dist\\build\\mp-weixin" --port 9420 --auto-port 9422'
+    );
+    process.exit(2);
+  }
+  console.log('连接 ' + WS + '（端口已有人在用，若同时有其他自动化任务，注意互相让一下）\n');
   let ok = 0;
   let total = 0;
 
