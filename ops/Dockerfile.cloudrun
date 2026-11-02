@@ -1,0 +1,52 @@
+# 微信云托管 · API 镜像（D38 个人主体路线）
+#
+# 用法：把本文件放到**项目根目录**并命名为 `Dockerfile`
+#       （云托管「手动上传代码包」要求代码包根目录里就是 Dockerfile）。
+#
+#   cp ops/Dockerfile.cloudrun Dockerfile
+#   然后上传整个项目文件夹到云托管控制台
+#
+# 与 Dockerfile.api 的区别：
+# - 云托管要求把 Dockerfile 放在根目录，走 `COPY . .` 一次性拷入
+# - 监听端口必须是 80（云托管网关约定，可用 PORT 环境变量覆盖）
+# - 日志走 stdout（云托管的日志采集默认抓标准输出）
+# - 数据落 /data 之外要小心：容器会被缩容销毁重建，本地盘不持久
+
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    TZ=Asia/Shanghai \
+    PORT=80
+
+WORKDIR /app
+
+# OCR 需要的系统库（opencv headless 依赖 libgl / libglib）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt ./requirements.txt
+COPY backend/requirements.txt ./backend/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt -r backend/requirements.txt
+
+# OCR：云托管跑的就是真 OCR，所以这里必须装
+RUN pip install --no-cache-dir "rapidocr>=3.10" "onnxruntime>=1.20" opencv-python-headless
+
+# 源码
+COPY engine/ ./engine/
+COPY rules/ ./rules/
+COPY backend/ ./backend/
+
+# 运行时目录（容器本地盘，不持久；数据库请用云托管 MySQL 或外部存储）
+RUN mkdir -p /app/var/log /app/var/uploads /app/var/reports /app/var/cache \
+    && groupadd -r qbl && useradd -r -g qbl -d /app -s /sbin/nologin qbl \
+    && chown -R qbl:qbl /app
+
+USER qbl
+EXPOSE 80
+
+# 云托管用 PORT 环境变量，默认 80
+CMD ["sh", "-c", "exec python -m uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-80}"]
