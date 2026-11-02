@@ -88,9 +88,15 @@ export function getAdUnitId() {
   return '';
 }
 
+// 【D39】会员功能总开关：个人主体下微信虚拟支付不可开通，收入模式改为「纯免费 + 流量主广告」。
+// 关掉后：会员页不注册进提审包、所有入口不渲染、价格与《会员服务协议》不出现在上屏文案。
+// 目前是全局 false（个人主体上线阶段），将来主体变更成企业、支付能开了，
+// 把这里改回 true 并重新走提审即可，业务代码不用再改。
+export const MEMBERSHIP_ENABLED = false;
+
 // 会员是否在客户端展示可购买。
 // 抖音 iOS 虚拟支付能力能否开通待核实（下派书 §6.3/T1），未开通前 iOS 隐藏价格与购买入口。
-// 注意：微信侧规则还在核实，先别改这三处（会员 iOS 开关、隐私保护指引、服务说明入口）。
+// 【D39】微信侧已定：个人主体不能开虚拟支付，MEMBER_BUY_ENABLED.weixin 两项都是 false。
 export const MEMBER_BUY_ENABLED = {
   douyin: { ios: false, android: true },
   weixin: { ios: false, android: false },
@@ -98,6 +104,8 @@ export const MEMBER_BUY_ENABLED = {
 };
 
 // 额度规则展示用（真实规则以服务端为准，这里只用于文案）
+// 【D39】会员关闭期间，文案里不能再出现「会员每天 20 次」这类权益说明，
+// 所以额度只保留新用户赠送与广告次数，会员额度仅在 MEMBERSHIP_ENABLED 为真时使用。
 export const QUOTA_RULES = {
   newUserFree: 3,
   adDailyLimit: 5,
@@ -105,6 +113,7 @@ export const QUOTA_RULES = {
 };
 
 // 报告保存期限（文案用）
+// 【D39】会员关闭期间统一按普通用户 7 天，不出现「会员 30 天」。
 export const REPORT_TTL = {
   normal: 7,
   member: 30,

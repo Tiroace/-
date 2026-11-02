@@ -1,5 +1,5 @@
 // 额度与会员相关的展示判断
-import { MEMBER_BUY_ENABLED } from '@/common/config.js';
+import { MEMBER_BUY_ENABLED, MEMBERSHIP_ENABLED } from '@/common/config.js';
 import { detectPlatform } from '@/platform/detect.js';
 
 // 从系统信息里取操作系统（iOS / android / devtools）
@@ -17,14 +17,21 @@ export function getOsName() {
 }
 
 // 当前端是否展示会员价格与购买按钮
+// 【D39】总开关关掉时一律 false —— 个人主体不能开微信虚拟支付，
+// 会员入口、价格、《会员服务协议》都不许出现在提审包里。
 // 抖音 iOS：虚拟支付能力是否开通待核实（§6.3 / T1），未开通则隐藏，iOS 用户只能看广告换次数
-// 微信：二期再做，暂不开放购买
 export function canBuyMember() {
+  if (!MEMBERSHIP_ENABLED) return false;
   const { platform } = detectPlatform();
   const os = getOsName();
   const cfg = MEMBER_BUY_ENABLED[platform];
   if (!cfg) return false;
   return !!cfg[os];
+}
+
+// 整个会员模块（入口 / 页面 / 协议）是否可见。业务代码统一用它判断，不要各自读开关。
+export function isMembershipVisible() {
+  return !!MEMBERSHIP_ENABLED;
 }
 
 // iOS 端隐藏购买入口时给出的说明

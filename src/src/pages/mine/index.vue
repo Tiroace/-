@@ -33,8 +33,8 @@
         </view>
       </view>
 
-      <!-- 会员条 -->
-      <view class="vip-strip" @tap="gotoMember">
+      <!-- 会员条（D39：会员关闭时不渲染，整个条不出现） -->
+      <view v-if="membershipVisible" class="vip-strip" @tap="gotoMember">
         <view class="star"></view>
         <text class="vip-text">{{ vipStripText }}</text>
         <text class="vip-go">看看</text>
@@ -43,7 +43,8 @@
       <!-- 检查记录 -->
       <view class="h2row">
         <text class="h2">检查记录</text>
-        <text class="h2-side">保留 {{ memberActive ? 30 : 7 }} 天</text>
+        <!-- D39：会员关闭时不再显示 30 天，统一 7 天 -->
+        <text class="h2-side">保留 {{ memberActive && membershipVisible ? 30 : 7 }} 天</text>
       </view>
 
       <view v-if="!reports.length" class="card empty">
@@ -113,6 +114,7 @@ import SignalLamp from '@/components/SignalLamp.vue';
 import { ensureLogin, refreshUser, getUser } from '@/services/session.js';
 import { fetchReports } from '@/services/api.js';
 import { APP_NAME, APP_VERSION } from '@/common/brand.js';
+import { isMembershipVisible } from '@/common/entitlement.js';
 
 defineOptions({ name: 'MinePage' });
 
@@ -125,6 +127,8 @@ const appVersion = APP_VERSION;
 
 const balance = computed(() => Number((user.value && user.value.quota && user.value.quota.balance) || 0));
 const memberActive = computed(() => !!(user.value && user.value.membership && user.value.membership.active));
+// D39：会员关闭时整条会员入口不渲染，也不再提示「开通会员每天 20 次」
+const membershipVisible = isMembershipVisible();
 // /me 新增的两个统计字段（后端会给），没有时显示 0
 const checkedCount = computed(() => Number((user.value && user.value.checked_count) || 0));
 const redCount = computed(() => Number((user.value && user.value.red_count) || 0));
@@ -200,6 +204,8 @@ function openReport(r) {
 }
 
 function gotoMember() {
+  // D39：会员关闭时不跳转（条本身也不渲染，这里兜底）
+  if (!isMembershipVisible()) return;
   uni.navigateTo({ url: '/pages/member/index' });
 }
 
