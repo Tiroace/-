@@ -34,15 +34,29 @@ class EmbeddingProvider:
 
 
 def _tokens(text: str) -> list[str]:
-    """数字归一 + 字符 bigram：中文短句上比 unigram 稳，能压掉手机号/金额类噪声。"""
+    """数字归一 + 字符 bigram：中文短句上比 unigram 稳，能压掉手机号/金额类噪声。
+
+    数字归一有个坑：把连续数字压成 # 之后，「5000-5500元」整句只剩 `#元` 一个 token，
+    于是任何带「元」的短句都会和「先垫100元返130元」这类示例算出很高的相似度。
+    实测正常岗位的「5000-5500元/月」被判成「垫付货款返利」红（相似度 0.525），
+    是线上会直接误判的缺陷。所以：
+    - 数字仍归一，但不参与 bigram 过度拼接：先在数字位置保留一个占位符，再切词；
+    - 去掉纯符号 token，避免只剩一个 `#元` 的情况；
+    - 少于 2 个有效 token 时返回空（不够判相似，宁可不出套路结论）。
+    """
     raw = normalize(text)
     if not raw:
         return []
     # 连续数字压成一个 #：避免手机号/金额里的一串数字制造虚假相似度
     s = re.sub(r"[0-9]+", "#", raw)
     if len(s) < 2:
-        return [s]
-    return [s[i : i + 2] for i in range(len(s) - 1)]
+        return []
+    tokens = [s[i : i + 2] for i in range(len(s) - 1)]
+    # 去掉不含任何汉字/字母的 token（`#元`、`#/`、`--` 这类），它们不携带语义
+    tokens = [t for t in tokens if re.search(r"[\u4e00-\u9fffA-Za-z]", t)]
+    if len(tokens) < 2:
+        return []
+    return tokens
 
 
 class LocalTfidfProvider(EmbeddingProvider):

@@ -20,7 +20,7 @@ from .config import get_settings
 from .deps import get_db
 from .errors import AppError
 from .community.sensitive_seed import seed_sensitive_words
-from .logging_setup import setup_logging
+from .logging_setup import RETENTION_DAYS, setup_logging
 from .patterns_seed import seed_patterns
 from .routers import ad, admin, analysis, auth, community, feedback, orders, patterns
 
@@ -118,6 +118,9 @@ def health() -> dict:
 
 @app.on_event("startup")
 def _startup() -> None:
+    # 第 0 关硬要求：生产环境带默认口令必须拒绝启动（不是打警告），
+    # 放在最前面，任何依赖初始化的动作之前就把它拦下。
+    get_settings().assert_production_ready()
     get_db().init()
     seeded = seed_patterns(get_db(), get_settings().project_root / "rules" / "patterns_v1.json")
     if seeded:
@@ -128,7 +131,7 @@ def _startup() -> None:
     if words:
         logger.info("敏感词已灌种子：%d 条", words)
     logger.info("数据库就绪：%s", get_db().path)
-    logger.info("日志文件：%s（按天轮转，保留 %d 天）", LOG_PATH, 180)
+    logger.info("日志文件：%s（按天轮转，保留 %d 天）", LOG_PATH, RETENTION_DAYS)
     # R-03：截图 24 小时删除的承诺由这个定时任务兑现，不是只挂个 expires_at 字段
     retention.start()
 

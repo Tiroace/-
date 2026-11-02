@@ -23,6 +23,18 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
+# 默认口令：只在本地联调时可用。生产环境（QBL_ENV=prod）检测到任何一个没换，就拒绝启动。
+DEFAULT_SECRETS = {
+    "token_secret": "dev-token-secret-change-me",
+    "pay_secret": "dev-pay-secret-change-me",
+    "admin_token": "dev-admin-token",
+}
+
+
+class InsecureProductionConfig(RuntimeError):
+    """生产环境仍在用默认口令：必须拒绝启动，不能带着默认口令上线。"""
+
+
 @dataclass
 class Settings:
     project_root: Path = PROJECT_ROOT
@@ -93,6 +105,39 @@ class Settings:
 
     max_images: int = 3
     max_image_mb: int = 10
+
+    # ---- 运行环境 ----
+    env: str = field(default_factory=lambda: os.environ.get("QBL_ENV", "dev").strip().lower())
+
+    @property
+    def is_production(self) -> bool:
+        return self.env in ("prod", "production", "生产")
+
+    def default_secrets_in_use(self) -> list[str]:
+        """返回仍在用默认口令的配置项名（空列表表示安全）。"""
+        leaked = []
+        for name, default in DEFAULT_SECRETS.items():
+            value = str(getattr(self, name) or "").strip()
+            # 空值也算没配：生产环境拿空口令等于没有鉴权，同样必须拒启
+            if not value or value == default:
+                leaked.append(name)
+        return leaked
+
+    def assert_production_ready(self) -> None:
+        """生产环境自检：带着默认口令/开发通道禁止启动。"""
+        if not self.is_production:
+            return
+        leaked = self.default_secrets_in_use()
+        if leaked:
+            raise InsecureProductionConfig(
+                "生产环境（QBL_ENV=prod）检测到未配置或仍为默认口令："
+                + "、".join(leaked)
+                + "。请通过安全卡片注入 QBL_ADMIN_TOKEN / QBL_TOKEN_SECRET / QBL_PAY_SECRET 后重启。"
+            )
+        if self.dev_mode:
+            raise InsecureProductionConfig(
+                "生产环境（QBL_ENV=prod）不允许开启开发登录通道（QBL_DEV_MODE=1），请改为 0。"
+            )
 
 
 def get_settings() -> Settings:
