@@ -11,6 +11,11 @@
 #   - 引擎返回的 overall 不在 {red,amber,green,unknown} 里
 #
 # 用法：python src/scripts/gen-example-reports.py
+#
+# ⚠ 重跑会整份覆盖 src/common/exampleReports.js：red 样例里手工加的 company 字段
+#   （「示例（上海）科技有限公司」）会丢，「公司核实卡片·有全称」那一态就没了。
+#   本脚本只透传引擎输出，不生成 company。重跑前先看
+#   reports/复验记录-提审截图可截性两项改动.md §四。
 import json
 import os
 import sys
