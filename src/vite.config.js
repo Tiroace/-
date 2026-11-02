@@ -1,6 +1,11 @@
 // 构建配置：uni-app Vue3 + Vite
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import uni from '@dcloudio/vite-plugin-uni';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 // 真后端地址不写死在源码里，由构建时注入：
 //   - 开发构建（uni -p mp-weixin）默认注入本机后端地址，方便联调
@@ -14,10 +19,26 @@ function resolveApiBase(command, mode) {
   return '';
 }
 
+// 小程序页面/窗口配置（pages.json）按构建目标区分，两套配置各自独立、互不覆盖：
+//   - 开发构建（uni -p mp-weixin / npm run dev:*）：src/pages.json，tabBar 三项（含广场），供后续开放联调
+//   - 提审构建（npm run build:review:*，内部设 QBL_BUILD_TARGET=review）：src/pages.review.json，
+//     tabBar 只保留「检查」「我的」，广场页不进 tabBar（BUG-20261103-02；页面文件保留、代码不删）
+function resolvePagesJson() {
+  const target = String(process.env.QBL_BUILD_TARGET || '').trim().toLowerCase();
+  if (target === 'review') {
+    const review = path.join(HERE, 'src', 'pages.review.json');
+    if (!fs.existsSync(review)) {
+      throw new Error('提审构建找不到 ' + review);
+    }
+    return review;
+  }
+  return path.join(HERE, 'src', 'pages.json');
+}
+
 export default defineConfig(({ command, mode }) => {
   const apiBase = resolveApiBase(command, mode);
   return {
-    plugins: [uni()],
+    plugins: [uni({ pagesJsonPath: resolvePagesJson() })],
     define: {
       __QBL_API_BASE_URL__: JSON.stringify(apiBase),
     },

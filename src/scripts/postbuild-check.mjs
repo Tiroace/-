@@ -9,6 +9,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const DIST = process.argv[2] || 'dist/build/mp-weixin';
+// 第二参数 = 构建模式：review = 提审包（tabBar 两项），缺省 = 开发包（tabBar 三项）
+const REVIEW_MODE = String(process.argv[3] || '').trim().toLowerCase() === 'review';
 
 const rows = [];
 const ok = (n, d) => rows.push({ n, pass: true, d: d || '' });
@@ -107,6 +109,37 @@ if (appJson) {
   const must = ['pages/index/index', 'pages/report/index', 'pages/mine/index', 'pages/member/index'];
   const missing = must.filter((p) => !(appJson.pages || []).includes(p));
   missing.length ? bad('缺关键页面：' + missing.join(', ')) : ok('关键页面齐全（' + appJson.pages.length + ' 页）');
+}
+
+// ---------- 6b. tabBar：提审包必须只有「检查」「我的」（BUG-20261103-02） ----------
+{
+  const tb = (appJson && appJson.tabBar) || null;
+  const list = (tb && Array.isArray(tb.list) && tb.list) || [];
+  const paths = list.map((t) => t.pagePath);
+  const texts = list.map((t) => t.text);
+  // 这些界面文案里不允许出现「广场」入口字样
+  const uiHits = [];
+  for (const f of allFiles) {
+    if (!/\.(wxml|json)$/.test(f)) continue;
+    const txt = fs.readFileSync(f, 'utf8');
+    if (txt.includes('广场')) uiHits.push(path.relative(DIST, f));
+  }
+  const squareWxml = path.join(DIST, 'pages/square/index.wxml');
+  const squarePacked = fs.existsSync(squareWxml);
+
+  if (REVIEW_MODE) {
+    paths.length === 2 && paths.includes('pages/index/index') && paths.includes('pages/mine/index') && !paths.includes('pages/square/index')
+      ? ok('提审包 tabBar 只有 2 项：检查、我的（' + texts.join('、') + '）')
+      : bad('提审包 tabBar 不对：' + JSON.stringify(paths));
+    !uiHits.includes('app.json') && !uiHits.some((h) => h.startsWith('pages/index/') || h.startsWith('pages/mine/') || h === 'app.json')
+      ? ok('提审包首页/我的/tabBar 无「广场」字样')
+      : bad('提审包界面仍出现「广场」：' + uiHits.join(', '));
+    !squarePacked ? ok('提审包无广场页面') : console.log('  （提示）提审包内仍保留 pages/square 页面文件，仅入口不可达');
+  } else {
+    paths.includes('pages/square/index')
+      ? ok('开发包 tabBar 保留广场（3 项：' + texts.join('、') + '）')
+      : bad('开发包 tabBar 丢了广场：' + JSON.stringify(paths));
+  }
 }
 
 // ---------- 7. 版本字段口径：只有 rules_version，没有 prompt_version（D1 引擎契约） ----------

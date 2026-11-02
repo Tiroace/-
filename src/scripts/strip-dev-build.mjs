@@ -9,14 +9,22 @@
 // 2. 删掉对应的产物目录（并清理其他页面 json 里的分包/引用，如果有）；
 // 3. 扫全包，若仍出现被禁文案则报错退出（CI 能挡住）。
 //
-// 用法：node scripts/strip-dev-build.mjs dist/build/mp-weixin
+// 用法：
+//   node scripts/strip-dev-build.mjs dist/build/mp-weixin           开发包清理模式
+//   node scripts/strip-dev-build.mjs dist/build/mp-weixin review    提审包模式（额外去掉广场 tab）
 import fs from 'node:fs';
 import path from 'node:path';
 
 const DIST = process.argv[2] || 'dist/build/mp-weixin';
+const MODE = String(process.argv[3] || '').trim().toLowerCase();
+const IS_REVIEW = MODE === 'review';
 
 // 只在正式包里该消失的页面
 const DEV_ONLY_PAGES = ['pages/dev/index'];
+
+// 提审包（BUG-20261103-02）：tabBar 只保留「检查」「我的」，广场不进 tabBar。
+// 页面文件不删，代码不删——只是入口不可达。
+const REVIEW_TAB_ALLOW = ['pages/index/index', 'pages/mine/index'];
 
 // 正式包里不该出现的用户可见文案（这些是开发调试相关）
 const FORBIDDEN_STRINGS = ['开发自测（仅开发环境）', '开发自测', '开发环境'];
@@ -62,6 +70,25 @@ if (Array.isArray(appJson.subPackages)) {
       sp.pages = sp.pages.filter((p) => !DEV_ONLY_PAGES.includes((sp.root || '') + '/' + p));
     }
   });
+}
+
+// ---- 1b. 提审包：tabBar 只保留「检查」「我的」（BUG-20261103-02）----
+if (IS_REVIEW && appJson.tabBar && Array.isArray(appJson.tabBar.list)) {
+  const beforeList = appJson.tabBar.list;
+  const kept = beforeList.filter((t) => REVIEW_TAB_ALLOW.includes(t.pagePath));
+  const dropped = beforeList.filter((t) => !REVIEW_TAB_ALLOW.includes(t.pagePath));
+  if (dropped.length) {
+    appJson.tabBar.list = kept;
+    writeJson(appJsonPath, appJson);
+    changed += 1;
+    console.log('  · 提审包 tabBar 移除 ' + dropped.map((t) => t.text || t.pagePath).join('、'));
+  }
+  const paths = kept.map((t) => t.pagePath).sort().join(',');
+  if (paths !== REVIEW_TAB_ALLOW.slice().sort().join(',')) {
+    console.log('✗ 提审包 tabBar 不是「检查」「我的」两项：' + paths);
+    process.exit(1);
+  }
+  console.log('  · 提审包 tabBar = ' + kept.map((t) => t.text || t.pagePath).join(' / '));
 }
 
 // ---- 2. 删产物目录 ----

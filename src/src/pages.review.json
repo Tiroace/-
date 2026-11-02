@@ -1,0 +1,23 @@
+{
+  "tabBar": {
+    "custom": false,
+    "color": "#8090A0",
+    "selectedColor": "#FFC93C",
+    "backgroundColor": "#121C27",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "检查",
+        "iconPath": "static/tab/check.png",
+        "selectedIconPath": "static/tab/check-on.png"
+      },
+      {
+        "pagePath": "pages/mine/index",
+        "text": "我的",
+        "iconPath": "static/tab/mine.png",
+        "selectedIconPath": "static/tab/mine-on.png"
+      }
+    ]
+  }
+}
