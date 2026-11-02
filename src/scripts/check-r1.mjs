@@ -386,6 +386,56 @@ function AI_RE_TEST(t) {
   return /(^|[^A-Za-z])AI([^A-Za-z]|$)/.test(t);
 }
 
+// 23. 【D38 个人主体】上屏文案不得出现企业主体资质类表述
+//     注意区分：报告里「国家企业信用信息公示系统」「不代表对任何企业的评价」
+//     指的是被查询的招聘公司，属于正常表述，不能一刀切禁「企业」两个字。
+//     真正要禁的是「我们自己需要企业资质」才会出现的那类词。
+{
+  const BANNED = ['营业执照', '统一社会信用代码', '工商注册号', '法人代表', '个体户', '企业认证', '企业主体', '对公账户'];
+  const hits = [];
+  const scan = (dir) => {
+    for (const f of fs.readdirSync(dir)) {
+      const p = path.join(dir, f);
+      if (fs.statSync(p).isDirectory()) {
+        if (f === 'dev' || f === 'node_modules') continue; // 开发自测页不进正式包，单独由 D-05 管
+        scan(p);
+      } else if (/\.(vue|js|json)$/.test(f)) {
+        const t = fs.readFileSync(p, 'utf8');
+        for (const w of BANNED) {
+          if (t.includes(w)) {
+            // 注释里的说明不算上屏文案，逐行判
+            const live = t.split(/\r?\n/).filter((l) => {
+              const s = l.trim();
+              if (s.startsWith('//') || s.startsWith('*') || s.startsWith('/*') || s.startsWith('<!--')) return false;
+              return l.includes(w);
+            });
+            if (live.length) hits.push(path.relative(SRC, p) + ':' + w);
+          }
+        }
+      }
+    }
+  };
+  scan(SRC);
+  hits.length
+    ? fail('【D38】无企业主体资质表述', [...new Set(hits)].join(', '))
+    : pass('【D38】上屏文案无企业主体资质表述（营业执照/统一社会信用代码/个体户等）');
+
+  // 名称在 manifest / pages.json / brand.js 三处必须一致（均取自 brand.js 的唯一来源语义）
+  const brandSrc = fs.readFileSync(path.join(SRC, 'common/brand.js'), 'utf8');
+  const appName = (brandSrc.match(/APP_NAME\s*=\s*['"]([^'"]+)['"]/) || [])[1];
+  const manifestSrc = fs.readFileSync(path.join(SRC, 'manifest.json'), 'utf8');
+  const pagesSrc = fs.readFileSync(path.join(SRC, 'pages.json'), 'utf8');
+  if (!appName) {
+    fail('【名称】brand.js 读不到 APP_NAME');
+  } else {
+    const inManifest = new RegExp('"name"\\s*:\\s*"' + appName + '"').test(manifestSrc);
+    const inPages = pagesSrc.includes(appName);
+    inManifest && inPages
+      ? pass('【名称】一致为「' + appName + '」（brand.js / manifest.json / pages.json）')
+      : fail('【名称】不一致', 'manifest=' + inManifest + ' pages=' + inPages + ' name=' + appName);
+  }
+}
+
 // 输出
 let failed = 0;
 for (const r of rows) {
