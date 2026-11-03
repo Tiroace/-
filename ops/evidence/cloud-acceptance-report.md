@@ -179,22 +179,42 @@ GET /admin/stats
 
 ---
 
-## 三、为什么 `trace.ocr.source` 拿不到（版本限制，非故障）
+## 三、为什么 `trace.ocr.source` 拿不到（**设计如此，与版本无关**）
 
-`e4425ac` 的 `backend/app/routers/analysis.py` 注释原文：
+**2026-11-03 22:3x 复核更正**：此前本节把原因归为「部署包旧」，**这个说法不准确，现已更正**。
+实情是 **`trace.ocr.source` 在任何接口里都不存在，最新 main 也一样**。三条代码事实：
 
-```python
-# 不暴露 trace 全文（里面有内部规则细节），但这三项足以验收 D40 与排障。
-"ocr_ms": ..., "ocr_parallel": ..., "ocr_images": ...
+1. `backend/app/routers/analysis.py:77-80` 返回的是**平铺三字段**，不是嵌套的 `trace` 对象：
+   ```python
+   # 不暴露 trace 全文（里面有内部规则细节），但这三项足以验收 D40 与排障。
+   "ocr_ms": ..., "ocr_parallel": ..., "ocr_images": ...
+   ```
+2. 全仓库提到 `ocr.source` 的只有两处，**都不是接口字段**：
+   - `analysis.py:324` — 带 `ocr_text` 时把它**写到磁盘** `task_dir/ocr.source = "api"`
+   - `worker.py:79` — 读这个磁盘文件判断是否走旁路
+3. `GET /analysis/{task_id}` 依赖 `current_user`（`analysis.py:337`），**管理令牌进不去**；
+   `/admin/stats` 只有计数，**没有任务列表接口**。
+
+**推论**：所以「`trace.ocr.source=rapidocr`」**走公网 API 拿不到、走真机拿不到、用管理员令牌也拿不到**；
+`ocr.source=None` 的含义是**字段不存在**，不是「值为 null」。**既不能当通过，也不能当失败。**
+
+**替代判据（三个硬指标，造不了假）**：
+
+| 指标 | 判据 | 为什么硬 |
+| --- | --- | --- |
+| `ocr_ms` | 单张 5–10s、3 张 15–25s（**秒级**） | `ocr_text` 旁路是**毫秒级**，只有真跑 RapidOCR 才到秒级 |
+| `ocr_parallel` | 3 张时 `true` | 并行开关只在真实多图识别路径置位 |
+| `ocr_images` | `1` 或 `3` | 实际送进识别的图数 |
+
+**取数位置**：前端在开发者工具 Simulation 的 Network/console 抓 `GET /analysis/{id}` 原始返回报出。
+
+**运维实测样本（照此判真机数据）**：
+```json
+"ocr_ms": 2692, "ocr_parallel": false, "ocr_images": 1, "model": "rules", "rules_version": "v3.0"
 ```
 
-**这版设计上就不返回 `trace`**，所以：
-- 走公网 API 拿不到
-- **走小程序真机同样拿不到**
-
-`ocr.source=rapidocr` 的**等价证据**就是这三个字段：`ocr_ms` 有值（计时了）+ `ocr_images` 有值（识别了）+ `model=rules`。
-
-**要拿到 `source` 字段，只能部署 `8ab93ce` 之后的版本。**
+**若一定要字面值 `rapidocr`**：需改代码让 `_task_detail()` 返回该文件内容，或查容器日志的 OCR 行；
+**已记为明天补**，不作为今晚验收门槛。
 
 ---
 
@@ -217,4 +237,4 @@ GET /admin/stats
 | 1 | 生产库有一个孤立测试用户 `u_c8637068223a`（本报告执行时创建，用于 prod 行为测试） | 运维，建议保留不删 |
 | 2 | `/openapi.json` 与 `/docs` 当前公网可访问（39,615 字节） | 运维，建议生产关闭 |
 | 3 | 前端真机链路（登录→上传→报告→次数-1→弹窗）未验 | 前端 |
-| 4 | 若要 `env`/`source` 字段可见，需重发 `8ab93ce` 之后版本 | 待定 |
+| 4 | `env` 字段要可见需重发 `8ab93ce` 之后版本；**`source` 字段最新 main 也不返回，需改代码** | 待定 |
