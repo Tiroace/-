@@ -52,6 +52,13 @@ def _ignore(_dir: str, names: list[str]) -> set[str]:
 
 
 def main() -> int:
+    import argparse
+
+    ap = argparse.ArgumentParser(description="生成云托管部署包")
+    ap.add_argument("--allow-dirty", action="store_true",
+                    help="运行时代码有未提交改动时仍然生成包（自担风险，通常用于本地调试）")
+    args = ap.parse_args()
+
     if not DOCKERFILE_SRC.exists():
         print(f"[pkg] 找不到 {DOCKERFILE_SRC}")
         return 1
@@ -116,12 +123,24 @@ def main() -> int:
     print("[pkg] 安全自检：未包含 .env / *.db / *.log / 证书，通过")
 
     # ---------- 版本校验（防止部署半成品）----------
-    _check_git_state()
+    head, dirty_lines = _check_git_state()
+    _write_package_info(out, head, dirty_lines, len(files), total)
+
+    if dirty_lines:
+        if args.allow_dirty:
+            print("")
+            print("[pkg] ⚠️  --allow-dirty：已生成包，但**内容含未提交改动，不要用于正式部署**。")
+            return 0
+        print("")
+        print("[pkg] ❌ 打包中止：运行时代码有未提交改动，拒绝生成可用于部署的包。")
+        print("[pkg]    请先提交并跑测试通过，再重新打包。")
+        print("[pkg]    确实要用当前工作区内容时，加 --allow-dirty 显式承担风险。")
+        return 1
     return 0
 
 
-def _check_git_state() -> None:
-    """打包时检查 git 状态，避免把未提交的半成品部署上去。
+def _check_git_state() -> tuple[str, list[str]]:
+    """返回 (HEAD 短 commit, 未提交的运行时改动行)。
 
     踩过的坑：开发者正在改 analysis.py（旁路加固）时打了包，
     包里是改动一半的代码，部署上去行为不可预期。
@@ -137,18 +156,39 @@ def _check_git_state() -> None:
 
     head = run(["rev-parse", "--short", "HEAD"])
     dirty = run(["status", "--porcelain", "--", "backend", "engine", "rules"])
+    dirty_lines = [ln for ln in dirty.splitlines() if ln.strip()]
 
     print("")
     print("[pkg] ---- 版本校验 ----")
     if head:
         print(f"[pkg] 打包基线 commit: {head}")
-    if dirty:
-        print("[pkg] ⚠️  以下运行时代码有**未提交改动**，包里是工作区当前状态（可能是半成品）：")
-        for line in dirty.splitlines()[:10]:
+    if dirty_lines:
+        print("[pkg] ⚠️  以下运行时代码有**未提交改动**（可能是半成品）：")
+        for line in dirty_lines[:10]:
             print(f"[pkg]     {line}")
-        print("[pkg] ⚠️  部署前确认这些改动是完整的、且测试已通过；否则先提交再打包。")
     else:
         print("[pkg] ✅ 运行时代码无未提交改动，包内容 = HEAD 版本")
+    return head, dirty_lines
+
+
+def _write_package_info(out: Path, head: str, dirty: list[str],
+                        n_files: int, total: int) -> None:
+    """把版本信息写进包，事后能查出「这次部署的是哪一版」。"""
+    from datetime import datetime
+
+    lines = [
+        "云托管部署包信息",
+        "=" * 40,
+        f"打包时间   : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        f"基线 commit: {head or '未知'}",
+        f"文件数     : {n_files}",
+        f"总大小     : {total / 1024 / 1024:.2f} MB",
+        f"代码状态   : {'干净（= HEAD 版本）' if not dirty else '有未提交改动（半成品，勿部署）'}",
+    ]
+    if dirty:
+        lines.append("未提交改动：")
+        lines.extend(f"  {ln}" for ln in dirty)
+    (out / "PACKAGE_INFO.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":
