@@ -1,6 +1,6 @@
 // 品牌与全局常量（改名后集中在这里，页面不要再写死名称）
 export const APP_NAME = '面试请等等';
-export const APP_VERSION = '2.0.0';
+export const APP_VERSION = '1.0.1';
 
 // 原生组件的颜色属性只能用字面量（switch 的 color=<string>），
 // 集中放这里，页面不散落色值；值与 uni.scss 的 $cta 保持一致。
