@@ -4,23 +4,48 @@
 # Does, in order:
 #   1) read AppID from $env:DSH_SECRET_WX_TEST_APPID (never printed)
 #   2) inject it into the BUILD artifact project.config.json (UTF-8, NO BOM)
-#   3) cli.bat preview -f image -o <jpg>
+#   3) cli.bat preview -f image -o <jpg>   (also kills stale IDE first)
 #   4) ALWAYS restore the placeholder in finally
 #   5) repo-wide plaintext scan for the AppID -> must be 0 hits
 #
 # Usage (from D:\qiuzhibilei):
 #   powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\support\wx-preview-qr.ps1
+#
+# NOTE (2026-11-03): default paths point at src\ (the real source root).
+#   D:\qiuzhibilei\miniprogram\ is a .gitignore'd LEGACY dir - do not use it.
+# NOTE on IDE: cli.bat quit lies (returns ok, processes stay, port 9420 stays held).
+#   This script force-kills stale IDE processes before preview.
 
 param(
-    [string]$Project = 'D:\qiuzhibilei\miniprogram\dist\build\mp-weixin',
-    [string]$SrcConfig = 'D:\qiuzhibilei\miniprogram\src\project.config.json',
+    [string]$Project = 'D:\qiuzhibilei\src\dist\build\mp-weixin',
+    [string]$SrcConfig = 'D:\qiuzhibilei\src\src\project.config.json',
     [string]$RepoRoot = 'D:\qiuzhibilei',
     [string]$OutDir = 'D:\qiuzhibilei\reports',
-    [int]$TimeoutSec = 180
+    [int]$TimeoutSec = 180,
+    [switch]$NoKillIde
 )
 
 $ErrorActionPreference = 'Stop'
 . 'D:\qiuzhibilei\tests\support\wxdev-cli.ps1'
+
+# --- force-kill stale IDE (quit is unreliable on this box) ---
+if (-not $NoKillIde) {
+    $procs = @(Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -match '微信开发者工具|WeChatAppEx' })
+    if ($procs.Count -gt 0) {
+        Write-Output ("killing stale IDE processes: " + $procs.Count)
+        foreach ($p in $procs) { try { Stop-Process -Id $p.Id -Force -ErrorAction Stop } catch { } }
+        Start-Sleep -Seconds 6
+    }
+    $held = @(Get-NetTCPConnection -LocalPort 9420 -State Listen -ErrorAction SilentlyContinue)
+    if ($held.Count -gt 0) {
+        # 注意：这里看到的占用通常是 CLI 自己刚拉起的 IDE，不是残留。
+        # 只要 cli preview 能成功，这一行不用管；若随后 preview 报 wait IDE port timeout，
+        # 再手动强杀一次（见 环境缺陷-微信开发者工具quit假成功.md）。
+        Write-Output ("note: port 9420 currently listening (PID " + (($held | ForEach-Object { $_.OwningProcess }) -join ',') + ") - usually the IDE the CLI just spawned")
+    } else {
+        Write-Output 'port 9420 is free'
+    }
+}
 
 $appid = $env:DSH_SECRET_WX_TEST_APPID
 if (-not $appid) { throw 'DSH_SECRET_WX_TEST_APPID is not set' }
