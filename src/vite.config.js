@@ -41,12 +41,15 @@ export default defineConfig(({ command, mode }) => {
   //   $env:VITE_CLOUD_ENV="prod-xxx"; $env:VITE_CLOUD_SERVICE="qbl-api"; npm run build:mp-weixin
   const cloudEnv = String(process.env.VITE_CLOUD_ENV || '').trim();
   const cloudService = String(process.env.VITE_CLOUD_SERVICE || '').trim();
+  // DeepSeek 密钥：只从环境变量注入，绝不写进代码/仓库（仓库是公开的）
+  const deepseekKey = String(process.env.VITE_DEEPSEEK_KEY || '').trim();
   return {
     plugins: [uni({ pagesJsonPath: resolvePagesJson() })],
     define: {
       __QBL_API_BASE_URL__: JSON.stringify(apiBase),
       __QBL_CLOUD_ENV__: JSON.stringify(cloudEnv),
       __QBL_CLOUD_SERVICE__: JSON.stringify(cloudService),
+      __QBL_DEEPSEEK_KEY__: JSON.stringify(deepseekKey),
     },
     server: {
       host: '0.0.0.0',

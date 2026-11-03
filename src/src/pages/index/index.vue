@@ -127,6 +127,10 @@ import SignalLamp from '@/components/SignalLamp.vue';
 import QuotaSheet from '@/components/QuotaSheet.vue';
 import { ensureLogin, getUser, refreshUser } from '@/services/session.js';
 import { createAnalysis, uploadImage, claimAdReward, newRequestId, ApiError } from '@/services/api.js';
+// 改造令 §〇：截图直发 DeepSeek 识图（失败静默退回上面的服务器流程）
+import { isVisionJudgeAvailable, toBase64, judgeImages, validateHits } from '@/services/judge.js';
+import { buildLocalReport } from '@/services/localReport.js';
+import { DEEPSEEK_MAX_IMAGES, MIN_OCR_CHARS } from '@/common/config.js';
 import { runRewardedFlow, canTriggerAd } from '@/common/adGuard.js';
 import { canBuyMember, isMembershipVisible } from '@/common/entitlement.js';
 import { getAdUnitId } from '@/common/config.js';
@@ -223,8 +227,58 @@ function removeImage(idx) {
 
 function startAnalysis() {
   submitting.value = true;
+  runLocalThenFallback();
+}
+
+// 新路径（改造令 §〇）：截图直发 DeepSeek 识图，一次完成认字 + 判断。
+// 任何一步失败都返回 null，静默走原来的服务器流程（用户无感知）。
+async function runLocal(paths) {
+  if (!isVisionJudgeAvailable()) return null;
+  try {
+    const images = [];
+    for (let i = 0; i < paths.length && i < DEEPSEEK_MAX_IMAGES; i += 1) {
+      // eslint-disable-next-line no-await-in-loop
+      const b64 = await toBase64(paths[i]);
+      if (!b64) return null;
+      images.push(b64);
+    }
+    if (!images.length) return null;
+    const { raw } = await judgeImages(images);
+    const text = String((raw && raw.text) || '');
+    if (text.replace(/\s/g, '').length < MIN_OCR_CHARS) return null; // 没认出来
+    const hits = validateHits(raw, text);
+    return buildLocalReport(raw, hits, text, { minChars: MIN_OCR_CHARS });
+  } catch (e) {
+    // 超时/余额不足/网络/JSON 坏：一律退回旧流程
+    return null;
+  }
+}
+
+async function runLocalThenFallback() {
+  const paths = images.value.map((i) => i.path);
+  let local = null;
+  try {
+    local = await runLocal(paths);
+  } catch (e) {
+    local = null;
+  }
+  if (local) {
+    submitting.value = false;
+    // 本地次数：改造令 §7，内测期先记在手机本地
+    try {
+      const left = Number(uni.getStorageSync('qbl_free_left') || 3);
+      if (local.is_job_posting) uni.setStorageSync('qbl_free_left', Math.max(0, left - 1));
+    } catch (e) {
+      /* 存储失败不影响出报告 */
+    }
+    const app = getApp();
+    if (app && app.globalData) app.globalData.lastReport = local;
+    uni.navigateTo({ url: '/pages/report/index?local=1' });
+    return;
+  }
+  // 退回服务器流程
   ensureLogin()
-    .then(() => uploadAll(images.value.map((i) => i.path)))
+    .then(() => uploadAll(paths))
     .then((imageIds) =>
       createAnalysis({
         imageIds,

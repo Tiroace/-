@@ -182,6 +182,8 @@ const VERDICT_TITLE = {
 
 const report = ref(emptyReport());
 const isSample = ref(false);
+// 本地识图报告（截图在手机上直接判断，不经过服务器）
+const isLocalReport = ref(false);
 const disclaimer = DISCLAIMER_TEXT;
 const checkTime = ref('');
 
@@ -414,6 +416,18 @@ onMounted(() => {
     const rep = getExampleReport(which) || getExampleReport('red');
     if (rep) report.value = rep;
     return;
+  }
+
+  // 本地识图报告（改造令 §〇）：由首页 runLocal 放进 globalData，不调接口
+  if (options.local === '1') {
+    const app = getApp();
+    const rep = app && app.globalData ? app.globalData.lastReport : null;
+    if (rep) {
+      report.value = rep;
+      isLocalReport.value = true;
+      return;
+    }
+    // 取不到就退回服务端按 task 取；都没有则提示补一张
   }
 
   // 正常流程：按 task_id 取报告

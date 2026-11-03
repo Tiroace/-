@@ -7,7 +7,7 @@ import { detectPlatform } from '@/platform/detect.js';
 // - 生产构建（uni build -p mp-weixin）：默认空串，产物里不会出现内网地址
 // - 覆盖方式：$env:VITE_API_BASE_URL = "http://x.x.x.x:8000" 后再构建
 // 运行时再用本地存储 qiuzhibilei_api_base 覆盖（「开发自测」页）。
-/* global __QBL_API_BASE_URL__, __QBL_CLOUD_ENV__, __QBL_CLOUD_SERVICE__ */
+/* global __QBL_API_BASE_URL__, __QBL_CLOUD_ENV__, __QBL_CLOUD_SERVICE__, __QBL_DEEPSEEK_KEY__ */
 export const DEV_API_BASE_URL =
   typeof __QBL_API_BASE_URL__ !== 'undefined' ? __QBL_API_BASE_URL__ : '';
 
@@ -17,6 +17,19 @@ export const CLOUD_ENV =
   typeof __QBL_CLOUD_ENV__ !== 'undefined' ? __QBL_CLOUD_ENV__ : '';
 export const CLOUD_SERVICE =
   typeof __QBL_CLOUD_SERVICE__ !== 'undefined' ? __QBL_CLOUD_SERVICE__ : '';
+
+// DeepSeek 识图判断（改造令 §〇）：密钥由 vite 构建时从 VITE_DEEPSEEK_KEY 注入，
+// **绝不写进代码或提交**（仓库是公开的）。为空则自动走服务器旧流程。
+export const DEEPSEEK_KEY =
+  typeof __QBL_DEEPSEEK_KEY__ !== 'undefined' ? __QBL_DEEPSEEK_KEY__ : '';
+export const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
+export const DEEPSEEK_MODEL = 'deepseek-flash';
+// 关思考模式后实测 2.4-2.7 秒；给 15 秒上限，超时即退回旧流程
+export const DEEPSEEK_TIMEOUT = 15000;
+// 一次检查最多几张图
+export const DEEPSEEK_MAX_IMAGES = 3;
+// 抄录文字少于这个字数就认为没认出来，退回旧流程
+export const MIN_OCR_CHARS = 20;
 
 // 是否已配置云托管：配置了就以真后端为准，不再默认走 mock
 export function hasCloudBackend() {
