@@ -28,13 +28,16 @@ INCLUDE_FILES = ["requirements.txt", "backend/requirements.txt"]
 # 不进这个包，云上就无法复测 21 张基线与 D40 端到端验收。
 EXTRA_FILES = [
     "ops/scripts/ocr_baseline_21.py",
-    # D40 端到端验收（21 张真实图 + 7 组三图，走真实 API），开发者第 2 关交付
+    "ops/scripts/deploy_accept.py",
+    # D40 端到端验收（走真实 API），开发者第 2 关交付
     "eval/eval_api_e2e.py",
     "eval/_console.py",
 ]
-# 验收用的真实图片。eval_api_e2e.py 与 ocr_baseline_21.py 都按 data/testset/_raw 找图，
-# 容器里没有这个目录就跑不了验收，所以直接把图片打进包（约 7.5MB，可接受）。
-INCLUDE_IMAGE_DIRS = ["data/testset/_raw"]
+# D41：21 张 BOSS 直聘真实图含未打码的第三人姓名头像，已移出仓库到本地私有目录，
+# **不再打进部署包**。云上验收用 eval_api_e2e.py 本身即可（它会用自带的合成图）。
+INCLUDE_IMAGE_DIRS: list[str] = []
+# .dockerignore 要一起放到包根目录（Dockerfile 构建时生效）
+EXTRA_ROOT_FILES = {"ops/.dockerignore": ".dockerignore"}
 # 运行时必须排除的（即使在上面的目录里）
 EXCLUDE_PATTERNS = ["__pycache__", "*.pyc", "*.pyo", ".pytest_cache"]
 
@@ -71,6 +74,14 @@ def main() -> int:
 
     # Dockerfile 放根目录，并改名
     shutil.copy2(DOCKERFILE_SRC, out / "Dockerfile")
+
+    # .dockerignore 也要放根目录（否则构建上下文不忽略任何东西）
+    for src_rel, dst_name in EXTRA_ROOT_FILES.items():
+        src = ROOT / src_rel
+        if src.exists():
+            shutil.copy2(src, out / dst_name)
+        else:
+            print(f"[pkg] 警告：缺少 {src_rel}（镜像会把无关文件一起构建进去）")
 
     for f in INCLUDE_FILES:
         src = ROOT / f

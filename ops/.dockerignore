@@ -1,0 +1,62 @@
+# 云托管镜像构建忽略清单（放到代码包根目录为 .dockerignore）
+#
+# 作用：减小构建上下文、避免把敏感/无关文件送进镜像。
+# 与 make_cloudrun_pkg.py 的分包逻辑互为两层保险：
+#   分包脚本决定「上传什么」，本文件决定「进镜像时再忽略什么」。
+
+# ---- 密钥与本地配置：绝不进镜像 ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+
+# ---- 数据与运行时产物 ----
+var/
+data/testset/_raw/
+data/testset/real_images/
+data/testset/raw/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.log
+
+# ---- 测试与评测（运行时不需；e2e 脚本单独 COPY）----
+tests/
+.pytest_cache/
+__pycache__/
+*.pyc
+*.pyo
+
+# ---- 前端与文档（后端镜像用不到）----
+src/
+miniprogram/
+node_modules/
+dist/
+docs/
+reports/
+
+# ---- 运维文档与历史脚本（只 COPY 需要的两个脚本）----
+ops/*.md
+ops/dist/
+ops/backup.sh
+ops/restore.sh
+ops/backup_local.py
+ops/local_up.py
+ops/usage_report.py
+ops/mysql-init/
+ops/evidence/
+
+# ---- 版本控制与编辑器 ----
+.git/
+.gitignore
+.githooks/
+.github/
+.idea/
+.vscode/
+Thumbs.db
+.DS_Store

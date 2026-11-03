@@ -1,16 +1,18 @@
-# 微信云托管 · API 镜像（D38 个人主体路线）
+# 微信云托管 · API 镜像（D38 第 2 关部署版）
 #
-# 用法：把本文件放到**项目根目录**并命名为 `Dockerfile`
-#       （云托管「手动上传代码包」要求代码包根目录里就是 Dockerfile）。
+# 用法：本文件会被 make_cloudrun_pkg.py 复制成部署包根目录的 `Dockerfile`，
+#       云托管「手动上传代码包」要求代码包根目录里就是 Dockerfile。
 #
-#   cp ops/Dockerfile.cloudrun Dockerfile
-#   然后上传整个项目文件夹到云托管控制台
+# 本版三处关键改动（老板 2026-11-03 要求）：
+#   ① 端口 8080（云托管网关按 PORT 环境变量转发；本地/自建可用 80）
+#   ② OCR 模型在**构建时**打进镜像（运行时容器不能联网下载模型；
+#      且容器会被销毁重建，每次重下模型既慢又可能失败）
+#   ③ 配套 .dockerignore（见 ops/.dockerignore，打包时一并放到根目录）
 #
-# 与 Dockerfile.api 的区别：
-# - 云托管要求把 Dockerfile 放在根目录，走 `COPY . .` 一次性拷入
-# - 监听端口必须是 80（云托管网关约定，可用 PORT 环境变量覆盖）
-# - 日志走 stdout（云托管的日志采集默认抓标准输出）
-# - 数据落 /data 之外要小心：容器会被缩容销毁重建，本地盘不持久
+# 其他约定：
+# - 非 root 运行（qbl 用户）；数据写 /app/var 与 /data
+# - 日志走 stdout（云托管默认采集标准输出）
+# - 容器本地盘不持久，SQLite 会随实例重建丢失（内测期已接受，见部署手册 §4）
 
 FROM python:3.12-slim
 
@@ -19,7 +21,7 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     TZ=Asia/Shanghai \
-    PORT=80
+    PORT=8080
 
 WORKDIR /app
 
@@ -32,25 +34,43 @@ COPY requirements.txt ./requirements.txt
 COPY backend/requirements.txt ./backend/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt -r backend/requirements.txt
 
-# OCR：云托管跑的就是真 OCR，所以这里必须装
+# OCR 依赖
 RUN pip install --no-cache-dir "rapidocr>=3.10" "onnxruntime>=1.20" opencv-python-headless
+
+# ---------- ② 模型在构建时打进镜像 ----------
+# RapidOCR 首次运行会尝试下载模型到包目录；容器运行时若不能联网/被销毁重建，
+# 每次都要重下（慢且可能失败）。这里在构建阶段就把模型下载并固化进镜像层。
+# 下载放在 root 阶段，然后再改属主给运行用户。
+RUN python -c "\
+from rapidocr import RapidOCR; \
+engine = RapidOCR(); \
+print('OCR 模型已下载到镜像'); \
+print([m for m in ('det','rec','cls') ])" \
+    && python -c "import rapidocr, pathlib; \
+p = pathlib.Path(rapidocr.__file__).parent / 'models'; \
+print('模型目录:', p); \
+print('模型文件数:', len(list(p.glob('*.onnx'))))"
 
 # 源码
 COPY engine/ ./engine/
 COPY rules/ ./rules/
 COPY backend/ ./backend/
 
-# 运维自检脚本：部署当天要在容器里跑 21 张真实图 OCR 基线，验证 D40 验收线
-# 只拷脚本本身，不拷整个 ops/（那份含文档与旧配置，不该进镜像）
+# 运维自检脚本（部署当天在容器里跑 OCR 基线 / D40 验收）
 COPY ops/scripts/ocr_baseline_21.py ./ops/scripts/ocr_baseline_21.py
+COPY ops/scripts/deploy_accept.py ./ops/scripts/deploy_accept.py
+COPY eval/eval_api_e2e.py ./eval/eval_api_e2e.py
+COPY eval/_console.py ./eval/_console.py
 
-# 运行时目录（容器本地盘，不持久；数据库请用云托管 MySQL 或外部存储）
-RUN mkdir -p /app/var/log /app/var/uploads /app/var/reports /app/var/cache \
+# 运行时目录 + 非 root 用户
+RUN mkdir -p /app/var/log /app/var/uploads /app/var/reports /app/var/cache /data \
     && groupadd -r qbl && useradd -r -g qbl -d /app -s /sbin/nologin qbl \
-    && chown -R qbl:qbl /app
+    && chown -R qbl:qbl /app /data
 
 USER qbl
-EXPOSE 80
 
-# 云托管用 PORT 环境变量，默认 80
-CMD ["sh", "-c", "exec python -m uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-80}"]
+# ① 端口 8080
+EXPOSE 8080
+
+# 云托管用 PORT 环境变量（默认 8080）
+CMD ["sh", "-c", "exec python -m uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
