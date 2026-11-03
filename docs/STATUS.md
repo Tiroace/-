@@ -367,10 +367,35 @@ ocr_ms / ocr_parallel / ocr_images
 | 问题 | 影响 | 何时处理 |
 | --- | --- | --- |
 | `/docs` 与 `/openapi.json` **匿名可访问**（`/openapi.json` 39,615 字节、36 个接口；`/admin/stats` 403、`/patterns` 401，鉴权本身正常） | 安全：内部接口结构对外公开 | **提审前关闭**：`FastAPI(docs_url=None, redoc_url=None, openapi_url=None)` |
-| **生产登录静默降级成 Mock**：`get_adapter()` 在 `QBL_WX_APPID`/`QBL_WX_SECRET` 缺失时回落 `MockAdapter`，任意随机 code 都发 token、每次登录建新用户送 3 次额度 | **高危**：可无限白嫖 OCR；真机内测验不出真实登录链路 | **内测前必须修**：`is_production` 且未配 AppID/Secret 时直接拒绝启动（与 `assert_production_ready()` 同一思路）。运维实测 `POST /auth/login {"code":"verify-prod-001"}` → 200 拿到 token |
+| **生产登录静默降级成 Mock**：`get_adapter()` 在 `QBL_WX_APPID`/`QBL_WX_SECRET` 缺失时回落 `MockAdapter`，任意随机 code 都发 token、每次登录建新用户送 3 次额度 | **高危**（006 版已关闭 Mock，但保护逻辑仍需补） | **内测前必须修**：`is_production` 且未配 AppID/Secret 时直接拒绝启动。运维实测旧版 `POST /auth/login {"code":"verify-prod-001"}` → 200 拿到 token；006 版已不再返回 mock |
 | 部署包 `e4425ac` 早于 `8ab93ce`，`/health` 缺三字段 | 运维取证不便（不影响功能） | 下次重新部署时用最新 main 构建 |
 | 生产库多 2 个孤立测试用户（`u_c8637068223a` 等，运维跑验收时用普通 code 登录创建） | 数据噪音，无权限风险 | 建议保留不删（删记录本身是写操作，风险更大）；必要时由开发给清洗脚本 |
 | 最小副本 = 1 | **未验证**（控制台是输入控件，文本读不出） | 老板或人在控制台看一眼 |
+| **容器出站 HTTPS 到 `api.weixin.qq.com` 被自签证书拦截**（`CERTIFICATE_VERIFY_FAILED: self-signed certificate`） | **内测前的硬阻塞**：真实微信登录不通；Mock 已关闭，这期间无法登录 | 开发排查容器出站代理 / 镜像 CA / 改走云调用 |
+| **`WeixinAdapter.code2session` 超时 8s 与网关 8s 等长** | 超时后只看到**空响应体 502**，分不清是业务错还是网关坏；今晚为此反复绕路 | 适配器超时压到网关以下，失败返回 **503 + `WX_LOGIN_FAILED`** 明确错误码 |
+
+### 11.4.1 登录链路收口（2026-11-03 夜，最终结论）
+
+**Mock 登录已关闭**：`platform=weixin` 不再返回 `200 + platform_mode:"mock"`。
+**真实微信适配器已接管，但因出站 TLS 失败，真实登录未打通。**
+
+```
+POST /auth/login {"platform":"weixin","code":"verify-prod-001"}
+→ HTTP 502，{"code":"PLATFORM_ERROR"}
+   微信 code2session 调用失败：
+   <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate>
+```
+
+**记录口径（今晚的教训）**：
+
+| 现象 | 能不能当结论 |
+| --- | --- |
+| `200 + platform_mode:"mock"` | ✅ 能，明确是 Mock |
+| `502` **空响应体** | ❌ 不能，`PlatformError` 本该带 `PLATFORM_ERROR` 响应体，空的更可能是超时被网关掐断 |
+| `502 + PLATFORM_ERROR + 错误原文` | ✅ 能，有明确错误码和原因才可定案 |
+
+**今晚三次「拿外部现象当内部结论」的教训**：`/health` 缺字段→说它版本旧；`200→502`→说 Secret 生效；计数涨→说链路打通。
+**规则：协议层现象不足以定案时，标「待核实」，不写通过。**
 
 ### 11.5 预览码（老板自测用）
 
