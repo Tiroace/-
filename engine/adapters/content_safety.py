@@ -17,11 +17,35 @@ class SafetyResult:
     meta: dict = field(default_factory=dict)
 
 
+@dataclass
+class TextSafetyResult:
+    """文本内容安全结论。suggest 取值 pass / review / risky / unknown。"""
+
+    passed: bool = True
+    suggest: str = "pass"
+    code: str = "pass"                      # pass / blocked / degraded / not_configured / disabled
+    reason: str = ""
+    meta: dict = field(default_factory=dict)
+
+
 class ContentSafetyAdapter:
     name = "base"
 
     def check(self, images: list[Path]) -> SafetyResult:
         raise NotImplementedError
+
+    def check_text(self, content: str) -> TextSafetyResult:
+        """文本检测。默认实现：未接真实接口，明确标注 not_configured 并放行。
+
+        子类（微信适配器）覆盖为真实 msgSecCheck。所有实现**都不能抛异常**
+        ——内容安全接口出问题不该让用户传不了截图。
+        """
+        return TextSafetyResult(
+            passed=True,
+            suggest="pass",
+            code="not_configured",
+            reason=self.name + "：未接入文本内容安全接口",
+        )
 
 
 class LocalContentSafetyStub(ContentSafetyAdapter):

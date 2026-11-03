@@ -23,6 +23,13 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(os.environ.get(name, default))
+    except (TypeError, ValueError):
+        return default
+
+
 # 默认口令：只在本地联调时可用。生产环境（QBL_ENV=prod）检测到任何一个没换，就拒绝启动。
 DEFAULT_SECRETS = {
     "token_secret": "dev-token-secret-change-me",
@@ -105,6 +112,25 @@ class Settings:
 
     max_images: int = 3
     max_image_mb: int = 10
+
+    # ---- 识别引擎 ----
+    # rapidocr / sidecar。主启动预热与 OCR 适配器工厂都读这个字段
+    # （engine_runner._get_ocr_adapter 用 getattr 兜底，但这里有字段更明确）。
+    ocr_backend: str = field(default_factory=lambda: os.environ.get("QBL_OCR_BACKEND", "rapidocr").strip().lower())
+
+    # ---- 内容安全（第 2 关：接微信真实接口）----    # off / wechat / local。默认 local（本地粗检桩）。
+    # wechat：调 msgSecCheck（文本）+ mediaCheckAsync（图片）；失败降级放行并记录，不阻塞主流程。
+    content_safety: str = field(default_factory=lambda: os.environ.get("QBL_CONTENT_SAFETY", "local").strip().lower())
+    # 图片异步检测需要一个可公网访问的 URL 前缀（云托管/对象存储域名）；空则跳过图片检测并记 degraded
+    content_safety_media_base: str = field(
+        default_factory=lambda: os.environ.get("QBL_CONTENT_SAFETY_MEDIA_BASE", "").strip()
+    )
+    content_safety_timeout: float = field(default_factory=lambda: _env_float("QBL_CONTENT_SAFETY_TIMEOUT", 8.0))
+
+    # ---- 开发兜底开关 ----
+    # 原型期旁路（API 直接传 ocr_text）：生产环境必须关闭。
+    # 规则：QBL_ENV=prod 下无论这个开关怎么设，一律拒绝 ocr_text；dev 下由本开关控制（默认开）。
+    dev_bypass: bool = field(default_factory=lambda: os.environ.get("QBL_DEV_BYPASS", "1") == "1")
 
     # ---- 运行环境 ----
     env: str = field(default_factory=lambda: os.environ.get("QBL_ENV", "dev").strip().lower())

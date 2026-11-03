@@ -17,9 +17,11 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from engine.adapters.content_safety import SafetyResult
 from engine.pipeline import AnalysisError
 
 from .config import Settings, get_settings
+from .content_safety_factory import build_content_safety, log_safety
 from .deps import get_db
 from .engine_runner import ocr_images, run_engine, translate_engine_error
 from .quota import balance, mark_analysis_consumed, refund_for_analysis
@@ -155,6 +157,31 @@ def _run_task(task_id: str) -> None:
             report, trace = run_engine(settings, model_name, images, ocr_text)
             if ocr_meta:
                 trace["ocr"] = ocr_meta
+            # 内容安全第二道闸（文本）：识别出文字后送 msgSecCheck。
+            # 违规 → 拦截（不扣次数）；接口异常 → 降级放行但记录，不阻塞用户出报告。
+            if ocr_text:
+                safety = build_content_safety(settings).check_text(ocr_text)
+                # 只依赖基类字段（suggest/code/reason），不假设具体适配器类型；
+                # label / degraded 是微信适配器特有的，用 getattr 取，缺失不影响主流程。
+                degraded = bool(getattr(safety, "degraded", safety.code == "degraded"))
+                trace["content_safety"] = {
+                    "suggest": safety.suggest,
+                    "code": safety.code,
+                    "label": getattr(safety, "label", 0),
+                    "degraded": degraded,
+                    "reason": safety.reason,
+                }
+                log_safety(
+                    SafetyResult(
+                        passed=safety.suggest != "risky",
+                        code="blocked" if safety.suggest == "risky" else (safety.code or "pass"),
+                        reason=safety.reason or safety.suggest,
+                    ),
+                    where="analysis-text",
+                    task_hint=f"task={task_id}",
+                )
+                if safety.suggest == "risky":
+                    raise AnalysisError("CONTENT_BLOCKED", "截图文字未通过内容安全检测")
         except AnalysisError as exc:
             code, _status = translate_engine_error(exc)
             duration_ms = int((time.perf_counter() - started_ts) * 1000)
