@@ -116,10 +116,26 @@ function login() {
 
 // 微信云托管内网调用（D38）。走 wx.cloud.callContainer：无需合法域名、无需公网访问。
 // 只有在云托管环境里才会成功；不在云托管时 reject，由上层决定要不要回落到普通请求。
+//
+// 关键：调 callContainer 之前必须先 wx.cloud.init，否则报 errCode -1 "Cloud API isn't enabled"。
+// 这里做一次性的惰性初始化，不放在模块顶层——小程序启动时 cloud 能力未必就绪。
+let cloudInited = false;
+function ensureCloudInit(wx, env) {
+  if (cloudInited) return;
+  if (typeof wx.cloud.init !== 'function') throw new Error('wx.cloud.init 不可用，基础库版本过低');
+  wx.cloud.init(env ? { env, traceUser: true } : { traceUser: true });
+  cloudInited = true;
+}
+
 function callContainer({ path, method = 'POST', data = {}, header = {}, env = '', service = '' }) {
   const wx = WX();
   if (!wx || !wx.cloud || typeof wx.cloud.callContainer !== 'function') {
     return Promise.reject(new Error('当前环境不支持云托管调用'));
+  }
+  try {
+    ensureCloudInit(wx, env);
+  } catch (e) {
+    return Promise.reject(new Error('云托管初始化失败：' + ((e && e.message) || e)));
   }
   const h = Object.assign({ 'X-WX-SERVICE': service }, header);
   return new Promise((resolve, reject) => {
