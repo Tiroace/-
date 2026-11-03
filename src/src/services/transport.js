@@ -11,6 +11,7 @@
 // 两者为空时回落到 uni.request + getApiBaseUrl()，行为与旧版完全一致。
 import { CLOUD_ENV, CLOUD_SERVICE, getApiBaseUrl, hasCloudBackend } from '@/common/config.js';
 import { callContainer } from '@/platform/index.js';
+import { compressToBase64 } from '@/platform/image.js';
 
 // 响应头统一小写，避免上层依赖平台大小写
 function pickHeaders(header) {
@@ -68,9 +69,8 @@ export function httpRequest({ path, method = 'GET', data = null, header = {} }) 
   });
 }
 
-// 文件上传（multipart，字段名 image）。
-// 注意：云托管 callContainer 不支持 multipart；云托管下需开公网访问才能直传，
-// 或者后端提供 base64 上传端点。切换云托管时这一步要单独联调（见 ops 部署手册 CP）。
+// 文件上传（multipart，字段名 image）——本地/公网链路用这个。
+// 云托管链路不能用它（callContainer 不支持 multipart），见 httpUploadAny。
 export function httpUpload({ path, filePath, name = 'image', formData = {}, header = {} }) {
   return new Promise((resolve, reject) => {
     uni.uploadFile({
@@ -82,5 +82,24 @@ export function httpUpload({ path, filePath, name = 'image', formData = {}, head
       success: (res) => resolve({ statusCode: res.statusCode, data: normalizeBody(res.data) }),
       fail: (err) => reject(new Error((err && err.errMsg) || '上传失败')),
     });
+  });
+}
+
+/**
+ * 上传截图：按当前链路自动选通道，调用方只拿 { statusCode, data }。
+ * - 云托管（callContainer 内网）→ 前端压缩后 POST /analysis/upload-base64（JSON）
+ * - 其它（本地联调 / 未来开公网）→ 原 multipart POST /analysis/upload
+ * 两条通道返回同一个 { image_id, hash, size, expires_at, safety } 封套。
+ */
+export async function httpUploadAny({ path, base64Path, filePath, name = 'image', formData = {}, header = {} }) {
+  if (!hasCloudBackend()) {
+    return httpUpload({ path, filePath, name, formData, header });
+  }
+  const img = await compressToBase64(filePath);
+  return httpRequest({
+    path: base64Path,
+    method: 'POST',
+    data: { image_b64: img.base64, mime: img.mime },
+    header,
   });
 }

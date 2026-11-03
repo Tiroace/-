@@ -7,7 +7,7 @@
 // - 默认走 services/mock.js；在「我的 → 开发自测」打开「使用真后端」后走真后端（不重新编译）
 import { useMock, getApiBaseUrl } from '@/common/config.js';
 import { getDeviceId } from '@/common/deviceId.js';
-import { httpRequest, httpUpload } from '@/services/transport.js';
+import { httpRequest, httpUploadAny } from '@/services/transport.js';
 import mock from '@/services/mock.js';
 
 const TOKEN_KEY = 'qiuzhibilei_token';
@@ -119,16 +119,17 @@ export function fetchMe() {
   return request('/me');
 }
 
-// 2.3a POST /analysis/upload（D9：multipart 单图，字段名 image）
-// uni.uploadFile 一次只能传一张，所以多图要循环调用，拿到 image_id 列表再提交分析。
+// 2.3a 截图上传（D9）：一次一张，多图循环调用，拿到 image_id 列表再提交分析。
+// 走哪条通道由 transport 决定：云托管 → base64 JSON，本地/公网 → multipart。
 export function uploadImage(filePath, { ocrText = '' } = {}) {
   if (useMock()) return unwrap(mock.postAnalysisUpload({ filePath, ocr_text: ocrText }));
   const header = {
     'X-Request-Id': newRequestId(),
     Authorization: getToken() ? 'Bearer ' + getToken() : '',
   };
-  return httpUpload({
+  return httpUploadAny({
     path: '/analysis/upload',
+    base64Path: '/analysis/upload-base64',
     filePath,
     name: 'image',
     formData: ocrText ? { ocr_text: ocrText } : {},
