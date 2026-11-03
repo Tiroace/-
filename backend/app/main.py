@@ -115,7 +115,22 @@ async def unexpected_handler(request: Request, exc: Exception) -> JSONResponse:
 
 @app.get("/health", tags=["运维"])
 def health() -> dict:
-    return {"ok": True, "data": {"status": "up", "service": "qbl-backend", "version": app.version}}
+    """健康检查：云托管负载均衡与部署验收都打这个。
+
+    只暴露「跑没跑起来 + 用什么引擎」，**不暴露连接串/口令/环境 ID**。
+    """
+    db = get_db()
+    return {
+        "ok": True,
+        "data": {
+            "status": "up",
+            "service": "qbl-backend",
+            "version": app.version,
+            "db": db.kind,
+            "env": "prod" if get_settings().is_production else get_settings().env,
+            "content_safety": get_settings().content_safety or "auto",
+        },
+    }
 
 
 @app.on_event("startup")
@@ -132,7 +147,9 @@ def _startup() -> None:
     )
     if words:
         logger.info("敏感词已灌种子：%d 条", words)
-    logger.info("数据库就绪：%s", get_db().path)
+    logger.info("数据库就绪：%s（引擎=%s）", get_db().describe(), get_db().kind)
+    logger.info("运行环境：env=%s", "prod" if get_settings().is_production else get_settings().env)
+    logger.info("内容安全：%s", get_settings().content_safety or "auto")
     logger.info("日志文件：%s（按天轮转，保留 %d 天）", LOG_PATH, RETENTION_DAYS)
     # R-03：截图 24 小时删除的承诺由这个定时任务兑现，不是只挂个 expires_at 字段
     retention.start()
