@@ -7,6 +7,7 @@
 // - 默认走 services/mock.js；在「我的 → 开发自测」打开「使用真后端」后走真后端（不重新编译）
 import { useMock, getApiBaseUrl } from '@/common/config.js';
 import { getDeviceId } from '@/common/deviceId.js';
+import { httpRequest, httpUpload } from '@/services/transport.js';
 import mock from '@/services/mock.js';
 
 const TOKEN_KEY = 'qiuzhibilei_token';
@@ -51,6 +52,7 @@ export function newRequestId() {
 
 // 真实网络请求（后端就绪后启用）
 // 返回封套里的 data；失败抛 ApiError
+// 传输层（云托管 callContainer / 普通 uni.request）在 services/transport.js 里选，这里不关心。
 function request(path, method = 'GET', data = null, extraHeader = {}) {
   const headers = {
     'content-type': 'application/json',
@@ -64,24 +66,26 @@ function request(path, method = 'GET', data = null, extraHeader = {}) {
     if (deviceId) headers['X-Device-Id'] = deviceId;
   }
 
-  return new Promise((resolve, reject) => {
-    uni.request({
-      url: getApiBaseUrl() + path,
-      method,
-      data,
-      header: Object.assign(headers, extraHeader),
-      success: (res) => {
-        const body = res.data || {};
-        if (body.ok === true) {
-          resolve(body.data);
-          return;
-        }
-        const err = body.error || {};
-        reject(new ApiError(err.code, err.message, err.detail));
-      },
-      fail: (err) => reject(new ApiError('INTERNAL_ERROR', (err && err.errMsg) || '网络异常')),
-    });
-  });
+  return httpRequest({
+    path,
+    method,
+    data,
+    header: Object.assign(headers, extraHeader),
+  }).then(
+    (res) => {
+      const body = res.data || {};
+      if (body.ok === true) return body.data;
+      const err = body.error || {};
+      // 云托管对未匹配路由返回平台级错误体，统一成 INTERNAL_ERROR 更可读
+      if (!err.code && res.statusCode >= 500) {
+        throw new ApiError('INTERNAL_ERROR', '服务暂时不可用（' + res.statusCode + '）');
+      }
+      throw new ApiError(err.code, err.message, err.detail);
+    },
+    (e) => {
+      throw new ApiError('INTERNAL_ERROR', (e && e.message) || '网络异常');
+    }
+  );
 }
 
 // 统一拆 mock 封套：ok → data；失败 → 抛 ApiError（与真实请求行为一致）
@@ -119,33 +123,27 @@ export function fetchMe() {
 // uni.uploadFile 一次只能传一张，所以多图要循环调用，拿到 image_id 列表再提交分析。
 export function uploadImage(filePath, { ocrText = '' } = {}) {
   if (useMock()) return unwrap(mock.postAnalysisUpload({ filePath, ocr_text: ocrText }));
-  return new Promise((resolve, reject) => {
-    uni.uploadFile({
-      url: getApiBaseUrl() + '/analysis/upload',
-      filePath,
-      name: 'image',
-      formData: ocrText ? { ocr_text: ocrText } : {},
-      header: {
-        'X-Request-Id': newRequestId(),
-        Authorization: getToken() ? 'Bearer ' + getToken() : '',
-      },
-      success: (res) => {
-        let body = {};
-        try {
-          body = JSON.parse(res.data || '{}');
-        } catch (e) {
-          reject(new ApiError('INTERNAL_ERROR', '服务返回格式异常'));
-          return;
-        }
-        if (body.ok === true) resolve(body.data);
-        else {
-          const err = body.error || {};
-          reject(new ApiError(err.code, err.message, err.detail));
-        }
-      },
-      fail: (err) => reject(new ApiError('INTERNAL_ERROR', (err && err.errMsg) || '上传失败')),
-    });
-  });
+  const header = {
+    'X-Request-Id': newRequestId(),
+    Authorization: getToken() ? 'Bearer ' + getToken() : '',
+  };
+  return httpUpload({
+    path: '/analysis/upload',
+    filePath,
+    name: 'image',
+    formData: ocrText ? { ocr_text: ocrText } : {},
+    header,
+  }).then(
+    (res) => {
+      const body = res.data || {};
+      if (body.ok === true) return body.data;
+      const err = body.error || {};
+      throw new ApiError(err.code, err.message, err.detail);
+    },
+    (e) => {
+      throw new ApiError('INTERNAL_ERROR', (e && e.message) || '上传失败');
+    }
+  );
 }
 
 // 2.3b POST /analysis（D9：JSON {image_ids, idempotency_key}，立即返回 task_id，不等分析结果）

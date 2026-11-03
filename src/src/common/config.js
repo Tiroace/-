@@ -7,9 +7,26 @@ import { detectPlatform } from '@/platform/detect.js';
 // - 生产构建（uni build -p mp-weixin）：默认空串，产物里不会出现内网地址
 // - 覆盖方式：$env:VITE_API_BASE_URL = "http://x.x.x.x:8000" 后再构建
 // 运行时再用本地存储 qiuzhibilei_api_base 覆盖（「开发自测」页）。
-/* global __QBL_API_BASE_URL__ */
+/* global __QBL_API_BASE_URL__, __QBL_CLOUD_ENV__, __QBL_CLOUD_SERVICE__ */
 export const DEV_API_BASE_URL =
   typeof __QBL_API_BASE_URL__ !== 'undefined' ? __QBL_API_BASE_URL__ : '';
+
+// 微信云托管（D38）：构建时注入环境 ID 与服务名。两个都非空才走 callContainer（内网，无需合法域名）。
+//   $env:VITE_CLOUD_ENV = "prod-xxxx"; $env:VITE_CLOUD_SERVICE = "qbl-api" 后再构建
+export const CLOUD_ENV =
+  typeof __QBL_CLOUD_ENV__ !== 'undefined' ? __QBL_CLOUD_ENV__ : '';
+export const CLOUD_SERVICE =
+  typeof __QBL_CLOUD_SERVICE__ !== 'undefined' ? __QBL_CLOUD_SERVICE__ : '';
+
+// 是否已配置云托管：配置了就以真后端为准，不再默认走 mock
+export function hasCloudBackend() {
+  return Boolean(CLOUD_ENV && CLOUD_SERVICE);
+}
+
+// 是否构建成了「接真后端」的包：云托管已配置，或构建时注入了公网 baseURL
+export function hasRealBackend() {
+  return hasCloudBackend() || Boolean(DEV_API_BASE_URL);
+}
 
 // 接口基地址的默认值：mock 模式下为空（不走网络）
 export const API_BASE_URL = '';
@@ -41,8 +58,10 @@ function readStorage(key) {
   }
 }
 
-// 是否使用 mock 数据层：默认 true，保留 mock 分支（测试依赖它）。
-// 真后端联调时通过「开发自测」页或本地存储切过去。
+// 是否使用 mock 数据层。
+// 默认值：构建时没配真后端 → 默认 mock（保留 mock 分支，测试依赖它）；
+//         构建时已注入云托管环境 / 公网 baseURL → 默认真后端，正式包不会悄悄走 mock。
+// 本地存储 qiuzhibilei_use_real_backend 可显式覆盖：'1'=真后端，'0'=强制 mock。
 //
 // 安全（改动清单 1 · 约束 4）：mock 专用开关写在本地存储里，会跟着设备走。
 // 正式模式（useRealBackend=1）下主动清掉「强制报告结论」开关，
@@ -50,7 +69,9 @@ function readStorage(key) {
 // 切回 mock 后重新布防，下次再进正式模式仍会清理。
 let mockForceOverallCleared = false;
 export function useMock() {
-  if (readStorage(STORAGE_KEYS.useRealBackend) === '1') {
+  const flag = String(readStorage(STORAGE_KEYS.useRealBackend) || '');
+  const real = flag === '1' ? true : flag === '0' ? false : hasRealBackend();
+  if (real) {
     if (!mockForceOverallCleared) {
       try {
         uni.removeStorageSync(STORAGE_KEYS.mockForceOverall);

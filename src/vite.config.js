@@ -37,10 +37,16 @@ function resolvePagesJson() {
 
 export default defineConfig(({ command, mode }) => {
   const apiBase = resolveApiBase(command, mode);
+  // 微信云托管（D38）：环境 ID 与服务名由构建时注入，不写死在源码里。
+  //   $env:VITE_CLOUD_ENV="prod-xxx"; $env:VITE_CLOUD_SERVICE="qbl-api"; npm run build:mp-weixin
+  const cloudEnv = String(process.env.VITE_CLOUD_ENV || '').trim();
+  const cloudService = String(process.env.VITE_CLOUD_SERVICE || '').trim();
   return {
     plugins: [uni({ pagesJsonPath: resolvePagesJson() })],
     define: {
       __QBL_API_BASE_URL__: JSON.stringify(apiBase),
+      __QBL_CLOUD_ENV__: JSON.stringify(cloudEnv),
+      __QBL_CLOUD_SERVICE__: JSON.stringify(cloudService),
     },
     server: {
       host: '0.0.0.0',

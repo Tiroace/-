@@ -114,6 +114,27 @@ function login() {
   });
 }
 
+// 微信云托管内网调用（D38）。走 wx.cloud.callContainer：无需合法域名、无需公网访问。
+// 只有在云托管环境里才会成功；不在云托管时 reject，由上层决定要不要回落到普通请求。
+function callContainer({ path, method = 'POST', data = {}, header = {}, env = '', service = '' }) {
+  const wx = WX();
+  if (!wx || !wx.cloud || typeof wx.cloud.callContainer !== 'function') {
+    return Promise.reject(new Error('当前环境不支持云托管调用'));
+  }
+  const h = Object.assign({ 'X-WX-SERVICE': service }, header);
+  return new Promise((resolve, reject) => {
+    wx.cloud.callContainer({
+      path,
+      method,
+      data,
+      header: h,
+      config: env ? { env } : undefined,
+      success: (res) => resolve({ statusCode: res.statusCode, data: res.data, header: res.header }),
+      fail: (err) => reject(new Error((err && err.errMsg) || '云托管调用失败')),
+    });
+  });
+}
+
 export default {
   login,
   isRewardedAdSupported,
@@ -121,6 +142,7 @@ export default {
   destroyRewardedAd,
   isPaymentSupported,
   pay,
+  callContainer,
 };
 
-export { destroyRewardedAd };
+export { destroyRewardedAd, callContainer };

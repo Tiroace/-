@@ -59,6 +59,14 @@ export const createRewardedAd = (adUnitId) => impl.current.createRewardedAd(adUn
 export const isPaymentSupported = () => impl.current.isPaymentSupported();
 export const pay = (orderInfo) => impl.current.pay(orderInfo);
 
+// ---- 云托管内网调用（D38）----
+// 只有微信实现支持。其它平台 / mock 实现没有 callContainer 时直接 reject，
+// 由 services/transport.js 决定回落策略。
+export const callContainer = (opts) =>
+  (typeof impl.current.callContainer === 'function'
+    ? impl.current.callContainer(opts)
+    : Promise.reject(new Error('当前平台不支持云托管调用')));
+
 export default {
   currentPlatform,
   login,
@@ -66,4 +74,5 @@ export default {
   createRewardedAd,
   isPaymentSupported,
   pay,
+  callContainer,
 };
