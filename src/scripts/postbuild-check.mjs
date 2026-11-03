@@ -43,6 +43,22 @@ if (appJson) {
   (appJson.pages || []).includes('pages/dev/index')
     ? bad('【D-05】app.json 仍含 pages/dev/index')
     : ok('【D-05】app.json 无 pages/dev/index');
+
+  // ---------- 1a. AppID：正式包不得是游客号（2026-11-03 切正式 AppID） ----------
+  // 注意：uni-app 不往 app.json 写 appid，AppID 落在产物根目录的 project.config.json 里
+  const REAL_APPID = 'wx807821c2d1fb9f3b';
+  let builtAppid = appJson.appid || '';
+  if (!builtAppid) {
+    try {
+      const pc = JSON.parse(fs.readFileSync(path.join(DIST, 'project.config.json'), 'utf8'));
+      builtAppid = pc.appid || '';
+    } catch (e) {
+      // 读不到就按空处理，下面会判失败
+    }
+  }
+  builtAppid === REAL_APPID
+    ? ok('appid = 正式 AppID（' + builtAppid + '）')
+    : bad('appid 不是正式 AppID：' + (builtAppid || '(空)') + '，期望 ' + REAL_APPID);
 }
 fs.existsSync(path.join(DIST, 'pages', 'dev'))
   ? bad('【D-05】仍有 pages/dev 目录')

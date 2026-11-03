@@ -1,5 +1,5 @@
 {
-  "description": "面试请等等（微信端）。appid 先用游客模式 touristappid，正式 AppID 由老板注册后替换。",
+  "description": "面试请等等（微信端）。正式 AppID，个人主体。",
   "packOptions": {
     "ignore": [],
     "include": []
@@ -45,7 +45,7 @@
   },
   "compileType": "src",
   "libVersion": "3.5.5",
-  "appid": "touristappid",
+  "appid": "wx807821c2d1fb9f3b",
   "projectname": "qiuzhibilei",
   "condition": {},
   "editorSetting": {
