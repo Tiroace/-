@@ -20,7 +20,7 @@
       <!-- 三个统计 -->
       <view class="card stats">
         <view class="stat">
-          <text class="stat-num">{{ balance }}</text>
+          <text class="stat-num">{{ isUnlimited ? '不限' : balance }}</text>
           <text class="stat-label">剩余次数</text>
         </view>
         <view class="stat">
@@ -115,6 +115,7 @@ import { ensureLogin, refreshUser, getUser } from '@/services/session.js';
 import { fetchReports } from '@/services/api.js';
 import { APP_NAME, APP_VERSION } from '@/common/brand.js';
 import { isMembershipVisible } from '@/common/entitlement.js';
+import { isUnlimitedEnv } from '@/common/env.js';
 
 defineOptions({ name: 'MinePage' });
 
@@ -126,6 +127,8 @@ const appVersion = APP_VERSION;
 // 开发自测入口用编译期条件编译（模板里的 #ifdef MP-DEV），不再靠运行期判断
 
 const balance = computed(() => Number((user.value && user.value.quota && user.value.quota.balance) || 0));
+// 开发版/体验版不限次数（老板 2026-11-04 定）
+const isUnlimited = isUnlimitedEnv();
 const memberActive = computed(() => !!(user.value && user.value.membership && user.value.membership.active));
 // D39：会员关闭时整条会员入口不渲染，也不再提示「开通会员每天 20 次」
 const membershipVisible = isMembershipVisible();

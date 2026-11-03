@@ -2,8 +2,8 @@
   "name": "面试请等等",
   "appid": "",
   "description": "把招聘截图发过来，30 秒告诉你这份工作有没有坑。报告仅供参考，不构成法律意见。",
-  "versionName": "1.0.4",
-  "versionCode": "104",
+  "versionName": "1.0.5",
+  "versionCode": "105",
   "transformPx": false,
   "mp-weixin": {
     "appid": "wx807821c2d1fb9f3b",

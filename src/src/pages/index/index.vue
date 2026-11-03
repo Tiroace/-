@@ -41,7 +41,8 @@
         </view>
 
         <view class="up-meta">
-          <text>还能免费查 <text class="up-meta-num">{{ balance }}</text> 次</text>
+          <text v-if="isUnlimited">内测期间不限次数</text>
+          <text v-else>还能免费查 <text class="up-meta-num">{{ balance }}</text> 次</text>
           <text>没查出结果，不扣次数</text>
         </view>
       </view>
@@ -134,6 +135,7 @@ import { DEEPSEEK_MAX_IMAGES, MIN_OCR_CHARS, QUOTA_RULES } from '@/common/config
 import { runRewardedFlow, canTriggerAd } from '@/common/adGuard.js';
 import { canBuyMember, isMembershipVisible } from '@/common/entitlement.js';
 import { getAdUnitId } from '@/common/config.js';
+import { isUnlimitedEnv } from '@/common/env.js';
 import { DISCLAIMER_TEXT } from '@/common/constants.js';
 import { SHARE_TITLE } from '@/common/brand.js';
 
@@ -152,6 +154,8 @@ const adRemaining = ref(5);
 const adCap = ref(5);
 const adLoading = ref(false);
 const showQuota = ref(false);
+// 开发版/体验版不限次数（老板 2026-11-04 定）：只在模板上用，不参与扣次数逻辑
+const isUnlimited = computed(() => isUnlimitedEnv());
 const memberAvailable = ref(canBuyMember());
 const weeklyPrice = ref('6.9');
 const disclaimer = DISCLAIMER_TEXT;
@@ -178,6 +182,9 @@ function syncUser(user) {
   }
   // 本地识图路径可用时，次数以本地为准：否则会出现「显示 3 次、实际已用掉」的矛盾
   if (isVisionJudgeAvailable()) balance.value = localFreeLeft();
+  // 开发版/体验版不限次数：模板用 isUnlimited 显示「内测期间不限次数」，
+  // 这里给一个足够大的数，避免后续任何 <= 0 的判断误拦
+  if (isUnlimitedEnv()) balance.value = 999999;
 }
 
 // 纯本地路径下不能显示「还能免费查 0 次」就拦住检查，次数由本地控制
@@ -208,7 +215,8 @@ function onPickOrStart() {
   }
   // 本地识图路径可用时次数以本地为准
   const left = localPathActive() ? localFreeLeft() : balance.value;
-  if (left <= 0) {
+  // 开发版/体验版不限次数：不拦、不弹「次数用完」
+  if (!isUnlimitedEnv() && left <= 0) {
     showQuota.value = true;
     return;
   }
@@ -349,7 +357,8 @@ async function uploadAll(paths) {
 function handleError(err) {
   const code = err instanceof ApiError ? err.code : 'INTERNAL_ERROR';
   if (code === 'QUOTA_EXHAUSTED') {
-    showQuota.value = true;
+    // 开发版/体验版不限次数：不弹次数用完的窗口
+    if (!isUnlimitedEnv()) showQuota.value = true;
     return;
   }
   const tips = {
