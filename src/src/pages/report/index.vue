@@ -4,6 +4,8 @@
     <view class="top-banner">
       <text class="chip">系统自动生成 · 仅供参考</text>
       <text v-if="isSample" class="chip chip-sample">示例报告 · 内容是虚构的，不指向任何公司</text>
+    <!-- 本机判断路径标识：只用于核对跑的是哪条链路，不出现任何模型名 -->
+    <text v-if="isLocalReport" class="chip chip-sample">本机判断 · {{ localTag }}</text>
     </view>
 
     <view class="main">
@@ -184,6 +186,11 @@ const report = ref(emptyReport());
 const isSample = ref(false);
 // 本地识图报告（截图在手机上直接判断，不经过服务器）
 const isLocalReport = ref(false);
+// 路径标识：便于核对线上跑的是本机判断还是服务器判断（不出现模型名）
+const localTag = computed(() => {
+  const r = report.value || {};
+  return r.rules_version ? r.rules_version : '';
+});
 const disclaimer = DISCLAIMER_TEXT;
 const checkTime = ref('');
 

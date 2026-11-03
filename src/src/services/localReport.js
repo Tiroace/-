@@ -3,6 +3,7 @@
 // 报告页、历史记录都按这套字段渲染，所以字段名一个都不能变（对照 engine/schema.py）。
 // 所有文字都来自固定模板，不新写文案；报告页因此不会出现「AI」字样。
 import { getPattern } from '@/common/patterns.js';
+import { LOCAL_RULES_VERSION, LOCAL_ENGINE } from '@/common/config.js';
 
 // 与 engine/report.py、engine/prompts.py 保持一致，改动时两边一起改
 export const DIMENSION_KEYS = ['fee', 'work', 'title', 'pay', 'company', 'contract'];
@@ -125,10 +126,10 @@ export function buildLocalReport(raw, hits, text, { minChars = 20 } = {}) {
     findings,
     questions_to_ask: questions.slice(0, 5).length ? questions.slice(0, 5) : EMPTY_QUESTIONS,
     how_to_verify: verify.slice(0, 5).length ? verify.slice(0, 5) : EMPTY_VERIFY,
-    rules_version: 'v3.0+ds',
+    rules_version: LOCAL_RULES_VERSION,
     pattern_db_version: 'local',
     // 便于统计与排查；报告页不展示
-    engine: 'deepseek',
+    engine: LOCAL_ENGINE,
     ocr_text: plain,
     ocr_source: 'deepseek-vision',
   };

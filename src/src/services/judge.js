@@ -5,7 +5,13 @@
 // - 不走 callContainer，直接 uni.request 到 api.deepseek.com（后台已加 request 合法域名）；
 // - 要求模型把截图文字完整抄进 text，前端用 text 校验 evidence，找不到就丢；
 // - 失败一律抛出，由上层静默退回服务器流程。
-import { DEEPSEEK_KEY, DEEPSEEK_URL, DEEPSEEK_MODEL, DEEPSEEK_TIMEOUT } from '@/common/config.js';
+import {
+  DEEPSEEK_KEY,
+  DEEPSEEK_URL,
+  DEEPSEEK_MODEL,
+  DEEPSEEK_TIMEOUT,
+  DEEPSEEK_THINKING,
+} from '@/common/config.js';
 import { PATTERNS, PATTERN_IDS } from '@/common/patterns.js';
 
 // 模型只能从这里选编号；实测模型会自己编不存在的编号（如 P-BAIT-01），所以：
@@ -124,7 +130,7 @@ export function judgeImages(images, { timeout = DEEPSEEK_TIMEOUT } = {}) {
         max_tokens: 2000,
         response_format: { type: 'json_object' },
         // 关掉思考模式：实测 8-11 秒降到 2.4-2.7 秒，抄录与判断结果一致
-        thinking: { type: 'disabled' },
+        thinking: DEEPSEEK_THINKING,
         messages: [
           { role: 'system', content: buildSystemPrompt() },
           { role: 'user', content },

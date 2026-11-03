@@ -26,6 +26,13 @@ export const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
 export const DEEPSEEK_MODEL = 'deepseek-flash';
 // 关思考模式后实测 2.4-2.7 秒；给 15 秒上限，超时即退回旧流程
 export const DEEPSEEK_TIMEOUT = 15000;
+// 关闭思考模式：实测单张 8.78s → 2.44-2.67s（reasoning_tokens=0），抄录与命中不变。
+// 这是唯一生效的写法——reasoning_effort=low、enable_thinking=false 都试过，均不生效。
+// 代价：关思考牺牲多少「抓真坑」的能力尚未用带答案的截图验证，见验收表。
+export const DEEPSEEK_THINKING = { type: 'disabled' };
+// 本地识图路径写进报告的版本标识，便于核对线上跑的是哪条路径
+export const LOCAL_RULES_VERSION = 'v3.0+ds';
+export const LOCAL_ENGINE = 'deepseek';
 // 一次检查最多几张图
 export const DEEPSEEK_MAX_IMAGES = 3;
 // 抄录文字少于这个字数就认为没认出来，退回旧流程
