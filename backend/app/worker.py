@@ -21,7 +21,7 @@ from engine.pipeline import AnalysisError
 
 from .config import Settings, get_settings
 from .deps import get_db
-from .engine_runner import run_engine, translate_engine_error
+from .engine_runner import ocr_images, run_engine, translate_engine_error
 from .quota import balance, mark_analysis_consumed, refund_for_analysis
 
 logger = logging.getLogger("qbl.worker")
@@ -58,11 +58,26 @@ def shutdown(wait: bool = True) -> None:
 
 
 def _read_ocr_text(settings: Settings, task_id: str) -> str | None:
-    """原型期旁路：OCR 文本存在 uploads/<task_id>/ocr.txt。正式版由云 OCR 出文本。"""
-    path = settings.upload_dir / task_id / "ocr.txt"
-    if not path.is_file():
+    """读旁路 OCR 文本。两种合法来源：
+
+    1. **调用方显式传入**（POST /analysis 带 ocr_text）：落盘时会写 ocr.source=api，
+       worker 必须用它——这是原型期旁路，也是测试入口。
+    2. **离线预置**（uploads/<task_id>/ocr.txt 由外部脚本写入）：只有
+       QBL_OCR_SIDECAR=1 显式打开时才认，避免正式环境误读预置文本、绕开真实 OCR。
+
+    第 2 关的要求是「有图必须真识别」，所以默认（无标记、无开关）返回 None，
+    交给 ocr_images() 走真实 OCR。
+    """
+    task_dir = settings.upload_dir / task_id
+    if not task_dir.is_dir():
         return None
-    text = path.read_text(encoding="utf-8").strip()
+    text_path = task_dir / "ocr.txt"
+    if not text_path.is_file():
+        return None
+    explicit = (task_dir / "ocr.source").is_file()
+    if not explicit and os.environ.get("QBL_OCR_SIDECAR", "0") != "1":
+        return None
+    text = text_path.read_text(encoding="utf-8").strip()
     return text or None
 
 
@@ -132,8 +147,14 @@ def _run_task(task_id: str) -> None:
                 time.sleep(delay_ms / 1000)
             images = _images(settings, task_id)
             ocr_text = _read_ocr_text(settings, task_id)
+            ocr_meta: dict = {}
+            if images and not ocr_text:
+                # 第 2 关：真实 OCR —— 有图片就必须识别，不再依赖预置文本
+                ocr_text, ocr_meta = ocr_images(settings, images)
             model_name = os.environ.get("QBL_ENGINE_MODEL", "mock")
             report, trace = run_engine(settings, model_name, images, ocr_text)
+            if ocr_meta:
+                trace["ocr"] = ocr_meta
         except AnalysisError as exc:
             code, _status = translate_engine_error(exc)
             duration_ms = int((time.perf_counter() - started_ts) * 1000)
@@ -164,8 +185,17 @@ def _run_task(task_id: str) -> None:
             mark_analysis_consumed(conn, user_id, task_id)
             conn.execute(
                 "UPDATE analysis_tasks SET status = 'done', duration_ms = ?, model = ?, prompt_version = ?,"
-                " finished_at = ? WHERE id = ?",
-                (duration_ms, trace.get("model") or "rules", trace.get("rules_version"), _now(), task_id),
+                " ocr_ms = ?, ocr_parallel = ?, ocr_images = ?, finished_at = ? WHERE id = ?",
+                (
+                    duration_ms,
+                    trace.get("model") or "rules",
+                    trace.get("rules_version"),
+                    int(round(float((trace.get("ocr") or {}).get("seconds", 0)) * 1000)) or None,
+                    1 if (trace.get("ocr") or {}).get("parallel") else 0,
+                    len((trace.get("ocr") or {}).get("images") or []) or None,
+                    _now(),
+                    task_id,
+                ),
             )
             logger.info("任务完成 task=%s overall=%s %dms", task_id, report["overall"], duration_ms)
     except Exception:  # 事务/数据库层异常：至少留日志，下一次巡检可补偿

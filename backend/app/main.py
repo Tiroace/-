@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import uuid
 
 from fastapi import FastAPI, Request
@@ -16,6 +17,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import retention, worker
+from .engine_runner import warmup_ocr
 from .config import get_settings
 from .deps import get_db
 from .errors import AppError
@@ -134,6 +136,16 @@ def _startup() -> None:
     logger.info("日志文件：%s（按天轮转，保留 %d 天）", LOG_PATH, RETENTION_DAYS)
     # R-03：截图 24 小时删除的承诺由这个定时任务兑现，不是只挂个 expires_at 字段
     retention.start()
+    # 第 2 关：真实 OCR 要走 API 链路。这里先建一次适配器（模型约 300MB），
+    # 避免第一个真实请求额外背加载时间。
+    # 只在生产或显式打开时预热：测试套会反复起 app，每次加载 300MB 模型会把测试拖死。
+    _settings = get_settings()
+    _warm = _settings.is_production or os.environ.get("QBL_OCR_WARMUP", "0") == "1"
+    if _warm and (_settings.ocr_backend or "") not in ("", "sidecar"):
+        if warmup_ocr(_settings):
+            logger.info("OCR 模型已预热（后端=%s）", _settings.ocr_backend)
+        else:
+            logger.warning("OCR 模型预热失败，稍后首个请求会再尝试（后端=%s）", _settings.ocr_backend)
 
 
 @app.on_event("shutdown")

@@ -34,6 +34,11 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("QBL_ENGINE_MODEL", "mock")
     monkeypatch.setenv("QBL_POLL_AFTER_MS", "20")
     monkeypatch.setenv("QBL_ADMIN_TOKEN", "dev-admin-token")
+    # 第 2 关起，worker 默认走真实 OCR；但这里的用例上传的是 1x1 假 PNG，
+    # 真实 OCR 读不出字（ANALYSIS_UNAVAILABLE）。测试要验的是业务逻辑与状态机，
+    # 不是 OCR 质量，所以显式打开旁路读 ocr.txt。
+    # 真实 OCR 链路由 eval/eval_raw_e2e.py 和 tests/backend 里专门的 OCR 用例覆盖。
+    monkeypatch.setenv("QBL_OCR_SIDECAR", "1")
 
     from backend.app import deps, worker
     from backend.app.main import app

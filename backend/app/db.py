@@ -86,6 +86,9 @@ CREATE TABLE IF NOT EXISTS analysis_tasks (
     error_code     TEXT,
     error_message  TEXT,
     duration_ms    INTEGER,
+    ocr_ms         INTEGER,                -- 第 2 关：真实 OCR 耗时（验收 D40 / 线上排障）
+    ocr_parallel   INTEGER,                -- 1 = 多图并行识别
+    ocr_images     INTEGER,                -- 本次识别了几张图
     model          TEXT,
     prompt_version TEXT,
     created_at     TEXT NOT NULL,
@@ -256,6 +259,9 @@ class Database:
             "analysis_tasks": {
                 "started_at": "TEXT",
                 "background_notified": "INTEGER NOT NULL DEFAULT 0",
+                "ocr_ms": "INTEGER",
+                "ocr_parallel": "INTEGER",
+                "ocr_images": "INTEGER",
             },
             "posts": {
                 "reviewed_by": "VARCHAR(40)",

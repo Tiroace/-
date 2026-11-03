@@ -72,6 +72,11 @@ def _task_detail(conn, task_id: str) -> dict:
         "error_code": task["error_code"],
         "error_message": task["error_message"],
         "duration_ms": task["duration_ms"],
+        # 第 2 关取证字段：真实 OCR 耗时、是否并行、识别了几张。
+        # 不暴露 trace 全文（里面有内部规则细节），但这三项足以验收 D40 与排障。
+        "ocr_ms": task["ocr_ms"] if "ocr_ms" in task.keys() else None,
+        "ocr_parallel": bool(task["ocr_parallel"]) if "ocr_parallel" in task.keys() else None,
+        "ocr_images": task["ocr_images"] if "ocr_images" in task.keys() else None,
         "model": task["model"],
         "rules_version": task["prompt_version"],
         "pattern_db_version": (json.loads(report_row["report_json"]).get("pattern_db_version") if report_row else None),
@@ -244,6 +249,10 @@ async def create_analysis(request: Request, user: dict = Depends(current_user)) 
         (task_dir / f"{idx}{suffix}").write_bytes(data)
     if ocr_text.strip():
         (task_dir / "ocr.txt").write_text(ocr_text.strip(), encoding="utf-8")
+        # 标记来源：调用方显式给了文本（原型期旁路 / 测试），worker 应当直接用它，
+        # 不要再对图片跑真实 OCR。第 2 关起真正做到「有图就识别」的同时，
+        # 不能把显式传入文本这条路误伤掉。
+        (task_dir / "ocr.source").write_text("api", encoding="utf-8")
 
     worker.submit(task_id)
 
