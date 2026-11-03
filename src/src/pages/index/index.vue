@@ -136,6 +136,8 @@ import { runRewardedFlow, canTriggerAd } from '@/common/adGuard.js';
 import { canBuyMember, isMembershipVisible } from '@/common/entitlement.js';
 import { getAdUnitId } from '@/common/config.js';
 import { isUnlimitedEnv } from '@/common/env.js';
+import { saveHistory } from '@/services/history.js';
+import { reportStats } from '@/services/stats.js';
 import { DISCLAIMER_TEXT } from '@/common/constants.js';
 import { SHARE_TITLE } from '@/common/brand.js';
 
@@ -305,10 +307,22 @@ async function runLocalThenFallback() {
     submitting.value = false;
     // 扣次数：只扣真正做了检查的（is_job_posting=false 不扣）
     if (local.report.is_job_posting) setLocalFreeLeft(localFreeLeft() - 1);
+    const meta = local.meta || {};
+    // 存本地检查记录（7 天 / 50 条，不存截图）
+    saveHistory(local.report, {
+      schemeTitle: (meta.scheme && meta.scheme.title) || '',
+      schemeId: meta.scheme_id || '',
+      patterns: (local.report.findings || []).map((f) => f.pattern_id).filter(Boolean),
+    });
+    // 匿名上报（不带文字/截图/身份），失败不影响用户
+    reportStats(local.report.overall, {
+      patternIds: (local.report.findings || []).map((f) => f.pattern_id).filter(Boolean),
+      schemeId: meta.scheme_id || '',
+    });
     const app = getApp();
     if (app && app.globalData) {
       app.globalData.lastReport = local.report;
-      app.globalData.lastReportMeta = local.meta || null; // 含 ocr_text，用于核对「认出了什么」
+      app.globalData.lastReportMeta = meta; // 含 ocr_text 与 scheme，用于横幅与核对
     }
     uni.navigateTo({ url: '/pages/report/index?local=1' });
     return;

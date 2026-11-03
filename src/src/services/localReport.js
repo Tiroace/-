@@ -2,7 +2,7 @@
 //
 // 报告页、历史记录都按这套字段渲染，所以字段名一个都不能变（对照 engine/schema.py）。
 // 所有文字都来自固定模板，不新写文案；报告页因此不会出现「AI」字样。
-import { getPattern } from '@/common/patterns.js';
+import { getPattern, getScheme, SCHEME_IDS } from '@/common/patterns.js';
 import {
   LOCAL_RULES_VERSION,
   LOCAL_ENGINE,
@@ -76,6 +76,24 @@ function computedOverall(dims, isJob) {
   return 'unknown';
 }
 
+// 老板 2026-11-04 定的升级规则（在"任一红灯→红"之外再加两条）：
+//   1) scheme_id 属于 S-01/02/03/07/08 且把握 high → 红
+//   2) 工作/work、薪资/pay、岗位/title 三个维度合计 ≥3 个黄灯 → 红
+const SCHEME_ESCALATE = new Set(['S-01', 'S-02', 'S-03', 'S-07', 'S-08']);
+const ESCALATE_DIMS = ['work', 'pay', 'title'];
+
+function escalateOverall(base, dims, schemeId, confidence) {
+  if (base === 'red' || base === 'unknown') return base;
+  if (SCHEME_ESCALATE.has(schemeId) && String(confidence || '').toLowerCase() === 'high') {
+    return 'red';
+  }
+  const amberCount = ESCALATE_DIMS.filter(
+    (k) => (dims.find((d) => d.key === k) || {}).level === 'amber'
+  ).length;
+  if (amberCount >= 3) return 'red';
+  return base;
+}
+
 // hits: 已通过 validateHits 校验的命中；text: 模型抄录的原文
 export function buildLocalReport(raw, hits, text, { minChars = 20 } = {}) {
   const plain = String(text || '');
@@ -100,7 +118,6 @@ export function buildLocalReport(raw, hits, text, { minChars = 20 } = {}) {
       });
 
   const dimensions = buildDimensions(findings);
-  const overall = computedOverall(dimensions, isJob);
 
   // 命中套路的 how 作为追问；没提到的维度补固定追问
   const questions = [];
@@ -125,9 +142,18 @@ export function buildLocalReport(raw, hits, text, { minChars = 20 } = {}) {
     if (p && p.how && verify.indexOf(p.how) < 0) verify.push(p.how);
   });
 
+  // 整体套路方案：模型选的 scheme_id 必须在白名单里，否则退回 S-00（不硬塞一个假的）
+  const rawScheme = raw && SCHEME_IDS.has(raw.scheme_id) ? raw.scheme_id : '';
+  const confidence = String((raw && raw.confidence) || '').toLowerCase();
+  const schemeInfo = getScheme(rawScheme) || getScheme('S-00') || {};
+  const schemeId = rawScheme || 'S-00';
+  const baseOverall = computedOverall(dimensions, isJob);
+  const escalated = isJob ? escalateOverall(baseOverall, dimensions, schemeId, confidence) : baseOverall;
+  const overall = escalated;
+
   // 严格按 engine/schema.py 的 TOP_KEYS 返回：
   // schema 是白名单校验（多一个字段就报「出现未定义字段」），
-  // 所以 engine / ocr_text 这类排查信息**不能放进报告对象**，单独放在第二个返回值里。
+  // 所以 engine / ocr_text / scheme 这类信息**不能放进报告对象**，单独放在 meta 里。
   return {
     report: {
       is_job_posting: isJob,
@@ -148,6 +174,12 @@ export function buildLocalReport(raw, hits, text, { minChars = 20 } = {}) {
       ocr_text: plain,
       ocr_source: 'deepseek-vision',
       text_len: plain.replace(/\s/g, '').length,
+      // 报告顶部大横幅用（不进 schema）
+      scheme_id: schemeId,
+      scheme: schemeInfo,
+      confidence,
+      escalated: overall !== baseOverall,
+      base_overall: baseOverall,
     },
   };
 }

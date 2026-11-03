@@ -1,5 +1,5 @@
 // 由 scripts/gen_prompt.py 从 rules/patterns_v1.json 生成，不要手改。
-// 来源版本：2026-10-30　条数：57
+// 来源版本：2026-10-30　条数：58 套路 / 9 套路方案
 // 前端只用于「校验模型返回的 pattern_id 是否合法」和「取话术模板」，不做判断。
 export const PATTERNS = [
   {
@@ -457,11 +457,109 @@ export const PATTERNS = [
     "level": "amber",
     "why": "工作地点到了才告诉你，你就很难提前核实，也很难中途离开。",
     "how": "具体在哪个城市、什么地址？能不能先发定位？"
+  },
+  {
+    "pattern_id": "P-PROMISE-01",
+    "name": "短期暴富承诺",
+    "dimension": "pay",
+    "level": "red",
+    "why": "给出远超行业水平的收入和晋升速度，还打包票「100% 成」，是拉人头、传销、招转培的常见开场。",
+    "how": "这几个月晋升的依据是什么？前三个月实际到手多少，能给我看工资条吗？"
+  }
+];
+
+export const SCHEMES = [
+  {
+    "scheme_id": "S-01",
+    "name": "画饼晋升、拉人头",
+    "title": "画饼拉人头",
+    "how_harm": "用「几个月升主管」「月入几万到几十万」把你说动，实际靠你拉人来赚钱。",
+    "consequence": "先交钱或先拉人，最后钱和人都没了，还可能牵涉传销。",
+    "ask": "收入是怎么来的？靠我自己干活，还是靠我拉人？",
+    "level": "red"
+  },
+  {
+    "scheme_id": "S-02",
+    "name": "培训贷、卖课",
+    "title": "培训贷卖课",
+    "how_harm": "说包就业，要你先交学费或办分期，合同签的是贷款。",
+    "consequence": "工作没找到先背债，每月要还钱，培训内容多是网课。",
+    "ask": "培训要不要交钱？能不能不办分期、不给身份证？",
+    "level": "red"
+  },
+  {
+    "scheme_id": "S-03",
+    "name": "刷单返利",
+    "title": "刷单返利",
+    "how_harm": "让你先垫钱刷单、做任务，返小钱钓大钱。",
+    "consequence": "前几单真返，等你投大的就连本带利提不出来。",
+    "ask": "为什么工作需要我先垫钱？能不能只在平台里交易？",
+    "level": "red"
+  },
+  {
+    "scheme_id": "S-04",
+    "name": "电销保险包装成文职",
+    "title": "文职其实是电销",
+    "how_harm": "岗位写成客服、行政、助理，实际是打电话卖保险、卖课、拉客户。",
+    "consequence": "干的不是招人时说的活，考核不达标就没钱，白耗几个月。",
+    "ask": "每天具体做什么？有业绩考核吗？要不要打电话卖东西？",
+    "level": "amber"
+  },
+  {
+    "scheme_id": "S-05",
+    "name": "主播陪玩引流",
+    "title": "陪聊引流当主播",
+    "how_harm": "用年轻团队、颜值形象、陪聊天吸引你，实际要出镜陪聊、陪酒、引流。",
+    "consequence": "工作内容和承诺完全不符，还可能被要求做不愿做的事。",
+    "ask": "要不要出镜、陪聊、陪酒？具体工作时间和内容是什么？",
+    "level": "amber"
+  },
+  {
+    "scheme_id": "S-06",
+    "name": "无底薪高提成销售",
+    "title": "没底薪靠提成",
+    "how_harm": "只讲高提成，不谈底薪，卖不出东西就一分钱没有。",
+    "consequence": "干满一个月拿不到钱，还倒贴交通和话费。",
+    "ask": "有没有底薪？底薪多少？完不成业绩怎么算？",
+    "level": "amber"
+  },
+  {
+    "scheme_id": "S-07",
+    "name": "境外高薪",
+    "title": "境外高薪招人",
+    "how_harm": "说东南亚等地月入几万，包机票包吃住，人过去了就收护照。",
+    "consequence": "被困在当地从事违法工作，人身安全没有保障。",
+    "ask": "具体在哪个国家哪个城市？签证是什么类型？",
+    "level": "red"
+  },
+  {
+    "scheme_id": "S-08",
+    "name": "入职收费",
+    "title": "入职先收钱",
+    "how_harm": "用押金、服装费、体检费、安置费等名目，入职前先收钱。",
+    "consequence": "钱交出去很难要回来，正规公司入职前不收费。",
+    "ask": "入职前需要我先交任何费用吗？",
+    "level": "red"
+  },
+  {
+    "scheme_id": "S-00",
+    "name": "看起来正常",
+    "title": "没看出明显问题",
+    "how_harm": "这份信息里没有明显套路，各项写得比较清楚。",
+    "consequence": "仍需当面核实公司和劳动合同。",
+    "ask": "公司全称是什么？什么时候签劳动合同？",
+    "level": "green"
   }
 ];
 
 export const PATTERN_IDS = new Set(PATTERNS.map((p) => p.pattern_id));
 
+export const SCHEME_IDS = new Set(SCHEMES.map((s) => s.scheme_id));
+
 export function getPattern(id) {
   return PATTERNS.find((p) => p.pattern_id === id) || null;
+}
+
+export function getScheme(id) {
+  return SCHEMES.find((s) => s.scheme_id === id) || null;
 }

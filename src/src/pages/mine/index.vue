@@ -116,6 +116,7 @@ import { fetchReports } from '@/services/api.js';
 import { APP_NAME, APP_VERSION } from '@/common/brand.js';
 import { isMembershipVisible } from '@/common/entitlement.js';
 import { isUnlimitedEnv } from '@/common/env.js';
+import { detectPlatform, PLATFORM_LABELS } from '@/platform/detect.js';
 
 defineOptions({ name: 'MinePage' });
 
@@ -139,8 +140,10 @@ const redCount = computed(() => Number((user.value && user.value.red_count) || 0
 const displayName = computed(() => {
   const u = user.value;
   if (!u) return '未登录';
-  // 拿不到平台昵称就显示「抖音用户」（任务书 §3）
-  return u.nickname || u.nick_name || '抖音用户';
+  // 拿不到平台昵称时按**当前运行平台**给兜底文案，不能写死「抖音用户」——
+  // 微信版里显示「抖音用户」是明显错误。平台取自 detectPlatform()。
+  const fallback = PLATFORM_LABELS[detectPlatform().platform] || '用户';
+  return u.nickname || u.nick_name || fallback;
 });
 
 const vipStripText = computed(() => {

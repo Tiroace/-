@@ -24,7 +24,7 @@ from .errors import AppError
 from .community.sensitive_seed import seed_sensitive_words
 from .logging_setup import RETENTION_DAYS, setup_logging
 from .patterns_seed import seed_patterns
-from .routers import ad, admin, analysis, auth, community, feedback, orders, patterns
+from .routers import ad, admin, analysis, auth, community, feedback, orders, patterns, stats
 
 # R-04：日志落盘 + 按天轮转、保留 180 天（原来是 console-only，进程一停就没了）
 LOG_PATH = setup_logging(get_settings().project_root)
@@ -53,6 +53,8 @@ app.include_router(orders.router)
 app.include_router(feedback.router)
 app.include_router(admin.router)
 app.include_router(patterns.router)
+# 匿名统计（老板 2026-11-04 定）：上报不需要登录，只收结论与套路编号
+app.include_router(stats.router)
 app.include_router(community.router)
 app.include_router(community.admin_router)
 

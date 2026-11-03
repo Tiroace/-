@@ -9,6 +9,13 @@
     </view>
 
     <view class="main">
+      <!-- 顶部大横幅（老板 2026-11-04 定）：红灯整条红色大横幅，黄灯黄色横幅 -->
+      <view v-if="bannerVisible" class="scheme-banner" :class="'scheme-banner-' + bannerLevel">
+        <text class="scheme-title">{{ bannerTitle }}</text>
+        <text class="scheme-verdict">{{ bannerVerdict }}</text>
+        <text class="scheme-harm">{{ bannerHarm }}</text>
+      </view>
+
       <!-- ② 结论区：三种灯 + 标题 + 副标题 -->
       <view class="verdict" :class="'verdict-' + overall">
         <view class="pole">
@@ -216,6 +223,26 @@ const overall = computed(() => {
 });
 
 const verdictTitle = computed(() => VERDICT_TITLE[overall.value]);
+
+// 顶部大横幅：只在「有整体套路判断」时显示。
+// 红灯整条红色、大口径写套路标题 +「建议别去」；黄灯黄色横幅。
+// 数据来自 meta.scheme（本地识图路径），服务器路径没有 scheme 时不显示横幅，不影响老报告。
+const reportMeta = ref(null);
+const bannerLevel = computed(() => (overall.value === 'red' ? 'red' : 'amber'));
+const bannerVisible = computed(() => {
+  const m = reportMeta.value;
+  if (!m || !m.scheme || !m.scheme.title) return false;
+  return overall.value === 'red' || overall.value === 'amber';
+});
+const bannerTitle = computed(() => {
+  const m = reportMeta.value || {};
+  return (m.scheme && m.scheme.title) || '';
+});
+const bannerVerdict = computed(() => (overall.value === 'red' ? '建议别去' : '要问清楚再去'));
+const bannerHarm = computed(() => {
+  const m = reportMeta.value || {};
+  return (m.scheme && m.scheme.how_harm) || '';
+});
 
 // 副标题统计：只数红黄绿，灰灯不计；0 项省略；unknown 换固定文案
 const verdictSub = computed(() => {
@@ -432,6 +459,8 @@ onMounted(() => {
     if (rep) {
       report.value = rep;
       isLocalReport.value = true;
+      // 整体套路方案（横幅用）随报告一起传进来，放在 meta 里不污染 schema
+      reportMeta.value = app.globalData.lastReportMeta || null;
       return;
     }
     // 取不到就退回服务端按 task 取；都没有则提示补一张
@@ -507,6 +536,46 @@ function onShare() {
   padding: 0 39rpx;
   display: flex;
   flex-direction: column;
+}
+
+// 顶部大横幅（老板 2026-11-04 定）：红灯整条红色、黄灯黄色，比结论卡更醒目
+.scheme-banner {
+  margin: 24rpx 0 20rpx;
+  border-radius: 24rpx;
+  padding: 32rpx 30rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.scheme-banner-red {
+  background-color: $red;
+}
+
+.scheme-banner-amber {
+  background-color: $amber;
+}
+
+.scheme-title {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.25;
+}
+
+.scheme-verdict {
+  margin-top: 10rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #ffffff;
+  opacity: 0.95;
+}
+
+.scheme-harm {
+  margin-top: 14rpx;
+  font-size: 26rpx;
+  line-height: 1.5;
+  color: #ffffff;
+  opacity: 0.9;
 }
 
 // ② 结论区：26px 圆角 = 24px 设计稿 → 46rpx

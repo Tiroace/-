@@ -25,8 +25,20 @@ FRONT = ROOT / "src" / "src" / "common" / "patterns.js"
 FRONT_PROMPT = ROOT / "src" / "src" / "common" / "prompt.js"
 
 
-def build_prompt(patterns: list[dict], version: str) -> str:
+def build_prompt(patterns: list[dict], version: str, schemes: list[dict] | None = None) -> str:
     lines = [f"{p['pattern_id']}｜{p['name']}｜{p.get('hint') or p.get('why') or ''}" for p in patterns]
+    scheme_lines = [
+        f"{s['scheme_id']}｜{s['name']}｜{s['how_harm']}" for s in (schemes or [])
+    ]
+    scheme_block = ""
+    if scheme_lines:
+        scheme_block = (
+            "\n"
+            f"整体套路清单（共 {len(scheme_lines)} 个，从里面选**一个**最像的，不许自己编）：\n"
+            + "\n".join(scheme_lines)
+            + "\n　　选完再给 confidence：high（很有把握）/ medium（像但不完全确定）。\n"
+            "　　看起来正常就选 S-00。\n"
+        )
     return (
         "你是招聘信息风险筛查器。用户给你 1-3 张招聘截图。\n"
         "第一步：把截图里的全部文字完整、原样抄进 text 字段，保留换行，不要概括、不要删减。\n"
@@ -35,7 +47,9 @@ def build_prompt(patterns: list[dict], version: str) -> str:
         "\n"
         f"套路清单（共 {len(patterns)} 条，只能从这里选；不在清单里的编号一律不许用，不许自己编造）：\n"
         + "\n".join(lines)
-        + "\n\n"
+        + "\n"
+        + scheme_block
+        + "\n"
         "规则：\n"
         "1. 每条命中必须给 evidence：从 text 里原样复制一句（不超过 60 字），一个字都不能改。\n"
         "2. 没把握的不要选；没有命中就返回空数组。\n"
@@ -44,14 +58,15 @@ def build_prompt(patterns: list[dict], version: str) -> str:
         "5. 软性套路（P-SOFT 开头）看整体意思，不要求原文出现清单里的字。\n"
         "6. 只输出 JSON，不要任何解释：\n"
         '{"is_job_posting": true, "text": "截图里的全部文字", '
-        '"hits": [{"pattern_id": "P-XXX", "evidence": "原文"}]}\n'
+        '"hits": [{"pattern_id": "P-XXX", "evidence": "原文"}], '
+        '"scheme_id": "S-XX", "confidence": "high"}\n'
         "\n"
         f"<!-- 本文件由 scripts/gen_prompt.py 从 rules/patterns_v1.json 生成，版本 {version}，"
-        f"共 {len(patterns)} 条；不要手改。 -->\n"
+        f"共 {len(patterns)} 条套路 / {len(scheme_lines)} 个套路方案；不要手改。 -->\n"
     )
 
 
-def build_front(patterns: list[dict], version: str) -> str:
+def build_front(patterns: list[dict], version: str, schemes: list[dict] | None = None) -> str:
     items = [
         {
             "pattern_id": p["pattern_id"],
@@ -63,16 +78,33 @@ def build_front(patterns: list[dict], version: str) -> str:
         }
         for p in patterns
     ]
+    scheme_items = [
+        {
+            "scheme_id": s["scheme_id"],
+            "name": s.get("name", ""),
+            "title": s.get("title", ""),
+            "how_harm": s.get("how_harm", ""),
+            "consequence": s.get("consequence", ""),
+            "ask": s.get("ask", ""),
+            "level": s.get("level", "amber"),
+        }
+        for s in (schemes or [])
+    ]
     header = (
         "// 由 scripts/gen_prompt.py 从 rules/patterns_v1.json 生成，不要手改。\n"
-        f"// 来源版本：{version}　条数：{len(items)}\n"
+        f"// 来源版本：{version}　条数：{len(items)} 套路 / {len(scheme_items)} 套路方案\n"
         "// 前端只用于「校验模型返回的 pattern_id 是否合法」和「取话术模板」，不做判断。\n"
     )
     body = "export const PATTERNS = " + json.dumps(items, ensure_ascii=False, indent=2) + ";\n\n"
+    body += "export const SCHEMES = " + json.dumps(scheme_items, ensure_ascii=False, indent=2) + ";\n\n"
     body += (
         "export const PATTERN_IDS = new Set(PATTERNS.map((p) => p.pattern_id));\n\n"
+        "export const SCHEME_IDS = new Set(SCHEMES.map((s) => s.scheme_id));\n\n"
         "export function getPattern(id) {\n"
         "  return PATTERNS.find((p) => p.pattern_id === id) || null;\n"
+        "}\n\n"
+        "export function getScheme(id) {\n"
+        "  return SCHEMES.find((s) => s.scheme_id === id) || null;\n"
         "}\n"
     )
     return header + body
@@ -97,8 +129,9 @@ def main() -> int:
         print("[FAIL] rules/patterns_v1.json 里没有 patterns")
         return 2
 
-    prompt = build_prompt(patterns, version)
-    front = build_front(patterns, version)
+    schemes = src.get("schemes") or []
+    prompt = build_prompt(patterns, version, schemes)
+    front = build_front(patterns, version, schemes)
     front_prompt = build_front_prompt(prompt, version, len(patterns))
 
     if check:

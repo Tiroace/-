@@ -66,6 +66,17 @@ CREATE TABLE IF NOT EXISTS pattern_hits (
 );
 CREATE INDEX IF NOT EXISTS idx_pattern_hits_time ON pattern_hits(hit_at);
 
+-- 匿名统计（老板 2026-11-04 定）：每次检查上报一条，只记「命中哪些套路 + 整体套路 + 红黄绿」。
+-- 明确**不存**：文字、截图、用户身份（无 user_id、无 openid、无设备号）。用途只是首页 Top 5 计数。
+CREATE TABLE IF NOT EXISTS check_stats (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    overall    VARCHAR(10) NOT NULL,       -- red / amber / green
+    scheme_id  VARCHAR(10),                -- S-00..S-08
+    patterns   TEXT NOT NULL DEFAULT '[]', -- JSON 数组：命中的 pattern_id
+    created_at VARCHAR(19) NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_check_stats_time ON check_stats(created_at);
+
 CREATE TABLE IF NOT EXISTS uploads (
     id           TEXT PRIMARY KEY,
     user_id      TEXT NOT NULL,
