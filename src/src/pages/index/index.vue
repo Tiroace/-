@@ -130,7 +130,7 @@ import { createAnalysis, uploadImage, claimAdReward, newRequestId, ApiError } fr
 // 改造令 §〇：截图直发 DeepSeek 识图（失败静默退回上面的服务器流程）
 import { isVisionJudgeAvailable, toBase64, judgeImages, validateHits } from '@/services/judge.js';
 import { buildLocalReport } from '@/services/localReport.js';
-import { DEEPSEEK_MAX_IMAGES, MIN_OCR_CHARS } from '@/common/config.js';
+import { DEEPSEEK_MAX_IMAGES, MIN_OCR_CHARS, QUOTA_RULES } from '@/common/config.js';
 import { runRewardedFlow, canTriggerAd } from '@/common/adGuard.js';
 import { canBuyMember, isMembershipVisible } from '@/common/entitlement.js';
 import { getAdUnitId } from '@/common/config.js';
@@ -176,6 +176,13 @@ function syncUser(user) {
     if (user.ad.daily_cap) adCap.value = Number(user.ad.daily_cap);
     if (typeof user.ad.remaining_today === 'number') adRemaining.value = Number(user.ad.remaining_today);
   }
+  // 本地识图路径可用时，次数以本地为准：否则会出现「显示 3 次、实际已用掉」的矛盾
+  if (isVisionJudgeAvailable()) balance.value = localFreeLeft();
+}
+
+// 纯本地路径下不能显示「还能免费查 0 次」就拦住检查，次数由本地控制
+function localPathActive() {
+  return isVisionJudgeAvailable();
 }
 
 onMounted(() => {
@@ -199,7 +206,9 @@ function onPickOrStart() {
     chooseImages();
     return;
   }
-  if (balance.value <= 0) {
+  // 本地识图路径可用时次数以本地为准
+  const left = localPathActive() ? localFreeLeft() : balance.value;
+  if (left <= 0) {
     showQuota.value = true;
     return;
   }
@@ -247,10 +256,32 @@ async function runLocal(paths) {
     const text = String((raw && raw.text) || '');
     if (text.replace(/\s/g, '').length < MIN_OCR_CHARS) return null; // 没认出来
     const hits = validateHits(raw, text);
+    // 返回 { report, meta }：report 严格符合服务器 schema，meta 放排查信息
     return buildLocalReport(raw, hits, text, { minChars: MIN_OCR_CHARS });
   } catch (e) {
     // 超时/余额不足/网络/JSON 坏：一律退回旧流程
     return null;
+  }
+}
+
+// 本地次数（改造令 §7）：内测期记在手机，默认 3 次。
+// 注意：不能用 parseInt(x) || 3 —— 剩 0 次时 0 是假值，会被误当成 3。
+function localFreeLeft() {
+  try {
+    const raw = uni.getStorageSync('qbl_free_left');
+    if (raw === '' || raw === null || raw === undefined) return QUOTA_RULES.newUserFree;
+    const n = parseInt(raw, 10);
+    return Number.isNaN(n) ? QUOTA_RULES.newUserFree : Math.max(0, n);
+  } catch (e) {
+    return QUOTA_RULES.newUserFree;
+  }
+}
+
+function setLocalFreeLeft(n) {
+  try {
+    uni.setStorageSync('qbl_free_left', String(Math.max(0, n)));
+  } catch (e) {
+    /* 存储失败不影响出报告 */
   }
 }
 
@@ -262,17 +293,15 @@ async function runLocalThenFallback() {
   } catch (e) {
     local = null;
   }
-  if (local) {
+  if (local && local.report) {
     submitting.value = false;
-    // 本地次数：改造令 §7，内测期先记在手机本地
-    try {
-      const left = Number(uni.getStorageSync('qbl_free_left') || 3);
-      if (local.is_job_posting) uni.setStorageSync('qbl_free_left', Math.max(0, left - 1));
-    } catch (e) {
-      /* 存储失败不影响出报告 */
-    }
+    // 扣次数：只扣真正做了检查的（is_job_posting=false 不扣）
+    if (local.report.is_job_posting) setLocalFreeLeft(localFreeLeft() - 1);
     const app = getApp();
-    if (app && app.globalData) app.globalData.lastReport = local;
+    if (app && app.globalData) {
+      app.globalData.lastReport = local.report;
+      app.globalData.lastReportMeta = local.meta || null; // 含 ocr_text，用于核对「认出了什么」
+    }
     uni.navigateTo({ url: '/pages/report/index?local=1' });
     return;
   }

@@ -3,7 +3,12 @@
 // 报告页、历史记录都按这套字段渲染，所以字段名一个都不能变（对照 engine/schema.py）。
 // 所有文字都来自固定模板，不新写文案；报告页因此不会出现「AI」字样。
 import { getPattern } from '@/common/patterns.js';
-import { LOCAL_RULES_VERSION, LOCAL_ENGINE } from '@/common/config.js';
+import {
+  LOCAL_RULES_VERSION,
+  LOCAL_ENGINE,
+  SCHEMA_RULES_VERSION,
+  PATTERN_DB_VERSION,
+} from '@/common/config.js';
 
 // 与 engine/report.py、engine/prompts.py 保持一致，改动时两边一起改
 export const DIMENSION_KEYS = ['fee', 'work', 'title', 'pay', 'company', 'contract'];
@@ -66,7 +71,9 @@ function computedOverall(dims, isJob) {
   const levels = dims.map((d) => d.level);
   if (levels.includes('red')) return 'red';
   if (levels.includes('amber')) return 'amber';
-  return 'green';
+  if (levels.includes('green')) return 'green';
+  // 六个维度全是 none：什么都没提到，和服务器保持一致给 unknown（不是 green）
+  return 'unknown';
 }
 
 // hits: 已通过 validateHits 校验的命中；text: 模型抄录的原文
@@ -118,19 +125,29 @@ export function buildLocalReport(raw, hits, text, { minChars = 20 } = {}) {
     if (p && p.how && verify.indexOf(p.how) < 0) verify.push(p.how);
   });
 
+  // 严格按 engine/schema.py 的 TOP_KEYS 返回：
+  // schema 是白名单校验（多一个字段就报「出现未定义字段」），
+  // 所以 engine / ocr_text 这类排查信息**不能放进报告对象**，单独放在第二个返回值里。
   return {
-    is_job_posting: isJob,
-    overall,
-    summary: OVERALL_SUMMARY[overall] || OVERALL_SUMMARY.unknown,
-    dimensions,
-    findings,
-    questions_to_ask: questions.slice(0, 5).length ? questions.slice(0, 5) : EMPTY_QUESTIONS,
-    how_to_verify: verify.slice(0, 5).length ? verify.slice(0, 5) : EMPTY_VERIFY,
-    rules_version: LOCAL_RULES_VERSION,
-    pattern_db_version: 'local',
-    // 便于统计与排查；报告页不展示
-    engine: LOCAL_ENGINE,
-    ocr_text: plain,
-    ocr_source: 'deepseek-vision',
+    report: {
+      is_job_posting: isJob,
+      overall,
+      summary: OVERALL_SUMMARY[overall] || OVERALL_SUMMARY.unknown,
+      dimensions,
+      findings,
+      questions_to_ask: questions.slice(0, 5).length ? questions.slice(0, 5) : EMPTY_QUESTIONS,
+      how_to_verify: verify.slice(0, 5).length ? verify.slice(0, 5) : EMPTY_VERIFY,
+      // 必须是 v主.次：'v3.0+ds' 过不了 schema，标识改放 meta
+      rules_version: SCHEMA_RULES_VERSION,
+      // 必须是 YYYY-MM-DD：取套路库版本日期
+      pattern_db_version: PATTERN_DB_VERSION,
+    },
+    meta: {
+      engine: LOCAL_ENGINE,
+      path_tag: LOCAL_RULES_VERSION,   // 'v3.0+ds'，用于核对走的是哪条链路
+      ocr_text: plain,
+      ocr_source: 'deepseek-vision',
+      text_len: plain.replace(/\s/g, '').length,
+    },
   };
 }

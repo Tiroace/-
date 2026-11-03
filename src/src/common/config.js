@@ -30,9 +30,14 @@ export const DEEPSEEK_TIMEOUT = 15000;
 // 这是唯一生效的写法——reasoning_effort=low、enable_thinking=false 都试过，均不生效。
 // 代价：关思考牺牲多少「抓真坑」的能力尚未用带答案的截图验证，见验收表。
 export const DEEPSEEK_THINKING = { type: 'disabled' };
-// 本地识图路径写进报告的版本标识，便于核对线上跑的是哪条路径
+// 本地识图路径的标识，便于核对线上跑的是哪条路径
 export const LOCAL_RULES_VERSION = 'v3.0+ds';
 export const LOCAL_ENGINE = 'deepseek';
+// 报告里 rules_version / pattern_db_version 必须过 engine/schema.py 的格式校验：
+//   rules_version  ^v\d+\.\d+$   pattern_db_version  ^\d{4}-\d{2}-\d{2}$
+// 所以报告内写规范值，'v3.0+ds' 这种带后缀的只放在 meta.path_tag 里做排查用。
+export const SCHEMA_RULES_VERSION = 'v3.0';
+export const PATTERN_DB_VERSION = '2026-10-30';
 // 一次检查最多几张图
 export const DEEPSEEK_MAX_IMAGES = 3;
 // 抄录文字少于这个字数就认为没认出来，退回旧流程
