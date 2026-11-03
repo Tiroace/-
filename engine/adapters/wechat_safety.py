@@ -94,10 +94,9 @@ def _post_json(url: str, payload: dict, timeout: float = 8.0) -> dict:
 
 @dataclass
 class TextCheck(TextSafetyResult):
-    """微信 msgSecCheck 的文本结论。字段与基类一致，另带 label 与原始响应。"""
+    """微信 msgSecCheck 的文本结论。degraded 等字段继承基类，这里只补 label 与原始响应。"""
 
     label: int = 0
-    degraded: bool = False
     raw: dict = field(default_factory=dict)
 
 

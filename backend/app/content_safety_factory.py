@@ -54,7 +54,15 @@ def _media_url_builder(settings: Settings):
 
 
 def build_content_safety(settings: Settings, openid: str = "") -> ContentSafetyAdapter:
-    mode = (settings.content_safety or "local").lower()
+    """按配置造内容安全适配器。
+
+    模式（QBL_CONTENT_SAFETY）：
+    - auto（默认）：云托管里有令牌就用云调用（免 AppSecret），否则用本地桩
+    - cloudbase：强制用云托管令牌（读不到令牌就降级）
+    - wechat：用 AppID+AppSecret 换 access_token（不走云托管时用）
+    - off：关闭，明确标注未检
+    """
+    mode = (settings.content_safety or "auto").lower()
     if mode == "off":
         return DisabledContentSafety()
     if mode == "wechat":
@@ -65,6 +73,17 @@ def build_content_safety(settings: Settings, openid: str = "") -> ContentSafetyA
             timeout=settings.content_safety_timeout,
             media_url_builder=_media_url_builder(settings),
         )
+    if mode in ("cloudbase", "auto"):
+        from engine.adapters.cloudbase_safety import CloudbaseTokenSafety, read_cloudbase_token
+
+        token = read_cloudbase_token()
+        if token:
+            logger.info("内容安全：使用云托管令牌（cloudbase_access_token），免 AppSecret")
+            return CloudbaseTokenSafety(timeout=settings.content_safety_timeout, openid=openid)
+        if mode == "cloudbase":
+            logger.warning("内容安全：配置为 cloudbase 但未读到云托管令牌，将降级放行")
+            return CloudbaseTokenSafety(timeout=settings.content_safety_timeout, openid=openid)
+        # auto 且无令牌：本地
     # 默认：本地桩（粗检 + 明确标注 not_configured）
     return LocalContentSafetyStub(max_files=settings.max_images, max_mb=settings.max_image_mb)
 

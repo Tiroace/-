@@ -26,6 +26,14 @@ class TextSafetyResult:
     code: str = "pass"                      # pass / blocked / degraded / not_configured / disabled
     reason: str = ""
     meta: dict = field(default_factory=dict)
+    degraded: bool = False                  # True = 没检成但放行，必须留痕
+
+    def __post_init__(self):
+        # code 与 degraded 保持自洽：调用方只设其一都不至于自相矛盾
+        if self.code == "degraded":
+            self.degraded = True
+        elif self.degraded and self.code == "pass":
+            self.code = "degraded"
 
 
 class ContentSafetyAdapter:
