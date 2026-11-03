@@ -289,3 +289,72 @@ P50 **6.01s**、P90 7.11s、最快 3.96s、最慢 7.74s。云托管容器规格*
 4. **OCR 并发压测未做** → 8 核 16G 是推算不是实测，等 D5 那轮实测回来后可能降到 4 核，直接影响成本。
 
 **老板待办（只能老板本人做）**：办执照 → 云账号企业实名 → 买 ECS（包年包月 ≥3 个月且含公网带宽，否则拿不到备案服务码）→ 买域名（持有人填公司名）→ 提交 ICP 备案（刷脸签名）→ 微信认证拿正式 AppID → 开通 OSS/SLS → 密钥走安全卡片交给运维。
+
+---
+
+## 十一、云托管实际部署与验收口径（2026-11-03 夜，个人助理整理）
+
+> 目的：**别让后来的人拿错口径验。** 本节记录实测值，不是推断。
+
+### 11.1 已达成的事实（全部实测）
+
+| 项 | 实测值 | 证据 |
+| --- | --- | --- |
+| 部署包 | `e4425ac` / 86 文件 / 0.58MB / 校验通过 | `PACKAGE_INFO.txt` |
+| 线上版本 | **`qbl-api-005`**（`qbl-api-004/003/002` 为历史），**服务正常、1 个实例** | 控制台「部署发布」 |
+| 容器规格 | **2 核 / 4 G** | 控制台「服务设置」 |
+| 实例副本数 | **最小 1 / 最大 5** | 同上 |
+| 端口 | 8080 | 构建成功+`/health` 可访问 |
+| 服务域名 | `https://qbl-api-340845-13-1524567996.sh.run.tcloudbase.com` | 控制台「公网访问」；`/health` 200 |
+| 环境变量 | **12 项全在**：`QBL_ENV=prod`、`QBL_DEV_MODE=0`、`QBL_FEATURE_COMMUNITY=0`、`QBL_USE_LLM=0`、`QBL_UPLOAD_TTL_HOURS=22`、`QBL_WORKER_THREADS=1`、`QBL_OCR_THREADS=3`、`QBL_WX_APPID=wx807821c2d1fb9f3b`、`QBL_CONTENT_SAFETY=auto`、`QBL_ADMIN_TOKEN`/`QBL_TOKEN_SECRET`/`QBL_PAY_SECRET` 各 43 位（**值不记录**） | 控制台输入框 value（**读文本节点读不到，必须读 input.value**） |
+| 代码推送 | `origin/main` 已含 `e4425ac`，领先 0 | `git status` |
+
+### 11.2 验收口径（**重要：旧口径在这套部署上不成立**）
+
+**`/health` 原始返回（HTTP 200，76 字节）：**
+```json
+{"ok":true,"data":{"status":"up","service":"qbl-backend","version":"0.1.0"}}
+```
+
+**`env` / `db` / `content_safety` 三个字段在本部署中不存在**，原因是版本：
+- 暴露这三字段的是提交 **`8ab93ce`**（在 `e4425ac` **之后**）
+- 部署包是 **`e4425ac`**（`git show e4425ac:backend/app/main.py` 可见该版本 `/health` 只返回 status/service/version）
+- **所以「`/health` 的 `env` 必须是 `prod`」这条，对本部署不可满足，不是配置没生效**
+
+**等价证据（已验证，替代旧口径）：**
+
+1. `X-Admin-Token: dev-admin-token`（旧默认值）→ **403**
+2. 不带 token → **403**
+3. 用 `env-secrets.txt` 里的 43 位 `QBL_ADMIN_TOKEN` → **200**（返回 counts）
+4. `/health` → 200，服务可响应（说明 startup 跑完）
+
+推理链：`e4425ac` 的 startup 第一件事是 `assert_production_ready()`；该函数仅在 `QBL_ENV=prod` 时才校验，且**任一密钥为空或为默认值就抛异常、容器拒绝启动**。服务能响应 → 校验通过 → 三密钥已替换。第 1、3 条正向证明生效的是**新令牌**而非默认值。
+
+### 11.3 真实图识别与耗时的正确判据（**`trace.ocr.source` 拿不到**）
+
+`backend/app/routers/analysis.py:62-91` 的 `_task_detail()` 明确**不暴露 trace 全文**（注释：里面有内部规则细节），只返回：
+
+```
+ocr_ms / ocr_parallel / ocr_images
+```
+
+`ocr.source` 写在任务目录文件 `task_dir/ocr.source` 里，**不是 API 字段**；`GET /analysis/{id}` 还需 `current_user`，管理令牌进不去。
+
+**因此验收看这三个数（造不了假）：**
+- `ocr_parallel = true`（3 张时）
+- `ocr_images = 1 / 3`
+- **`ocr_ms` 为秒级**（单张 5–10s、3 张 15–25s）；若只有几十毫秒，说明没走真实识别（读预置文本），**这才是应报失败的情形**
+
+### 11.4 已知问题（非阻塞，但要处理）
+
+| 问题 | 影响 | 何时处理 |
+| --- | --- | --- |
+| `/docs` 与 `/openapi.json` **匿名可访问**（Swagger 暴露全部接口清单） | 安全：内部接口结构对外公开 | **提审前关闭** |
+| 部署包 `e4425ac` 早于 `8ab93ce`，`/health` 缺三字段 | 运维取证不便（不影响功能） | 下次重新部署时用最新 main 构建 |
+
+### 11.5 预览码（老板自测用）
+
+- 生成方式：开发者工具已登录（`cli.bat islogin` → `{"login":true}`），直接
+  `cli.bat preview --project D:\qiuzhibilei\src\dist\build\mp-weixin --port 9420`
+- 产物：`D:\程序上线资料准备\预览码.jpg`（470×470，2026-11-03 22:03，AppID `wx807821c2d1fb9f3b`）
+- 已知坑：首次可能报 `socket hang up`，**重试一次即成功**，是网络抖动不是构建问题
