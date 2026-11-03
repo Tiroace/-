@@ -12,29 +12,16 @@ import {
   DEEPSEEK_TIMEOUT,
   DEEPSEEK_THINKING,
 } from '@/common/config.js';
-import { PATTERNS, PATTERN_IDS } from '@/common/patterns.js';
+import { PATTERN_IDS } from '@/common/patterns.js';
+// eslint-disable-next-line import/no-unresolved
+import { SYSTEM_PROMPT } from '@/common/prompt.js';
 
 // 模型只能从这里选编号；实测模型会自己编不存在的编号（如 P-BAIT-01），所以：
 // 1) prompt 里给精确清单 + 明说「不许编」；2) 返回后用 PATTERN_IDS 白名单过滤。
+// 提示词唯一来源：rules/prompt_v1.txt，由 scripts/gen_prompt.py 从 rules/patterns_v1.json 生成。
+// 前端不再自己拼清单——手写第二份一定漂移，漂移后模型能选的编号和校验白名单就对不上。
 function buildSystemPrompt() {
-  const list = PATTERNS.map((p) => `${p.pattern_id}｜${p.name}｜${p.why || ''}`).join('\n');
-  return [
-    '你是招聘信息风险筛查器。用户给你 1-3 张招聘截图。',
-    '第一步：把截图里的全部文字完整、原样抄进 text 字段，保留换行，不要概括、不要删减。',
-    '第二步：判断这段文字是不是招聘信息或和 HR 的聊天；不是就 is_job_posting=false，hits 为空。',
-    '第三步：从下面的套路清单里找出命中的编号。',
-    '',
-    '套路清单（只能从这里选，不在清单里的编号一律不许用，不许自己编造）：',
-    list,
-    '',
-    '规则：',
-    '1. 每条命中必须给 evidence：从 text 里原样复制一句（不超过 60 字），一个字都不能改。',
-    '2. 没把握的不要选；没有命中就返回空数组。',
-    '3. 正常薪资范围（例如「7000-8000元」「月薪 6000 元」）不是套路，不要因为出现薪资区间就命中。',
-    '4. 正常公司信息（公司名称、地址、五险一金）不是套路。',
-    '5. 只输出 JSON，不要任何解释：',
-    '{"is_job_posting": true, "text": "截图里的全部文字", "hits": [{"pattern_id": "P-XXX", "evidence": "原文"}]}',
-  ].join('\n');
+  return SYSTEM_PROMPT;
 }
 
 // 图片压缩：长边 ≤ 1600、JPEG 质量 80，控制 base64 体积（≤500KB 量级）

@@ -1,5 +1,5 @@
-// 由 scripts/gen_front_patterns.py 从 rules/patterns_v1.json 生成，不要手改。
-// 来源版本：2026-10-30　条数：50
+// 由 scripts/gen_prompt.py 从 rules/patterns_v1.json 生成，不要手改。
+// 来源版本：2026-10-30　条数：57
 // 前端只用于「校验模型返回的 pattern_id 是否合法」和「取话术模板」，不做判断。
 export const PATTERNS = [
   {
@@ -401,6 +401,62 @@ export const PATTERNS = [
     "level": "amber",
     "why": "没有营业执照或拒绝出示，主体无法核实。",
     "how": "要求出示营业执照并核对名称。"
+  },
+  {
+    "pattern_id": "P-SOFT-01",
+    "name": "生活化诱饵",
+    "dimension": "work",
+    "level": "amber",
+    "why": "用轻松、娱乐化的说法吸引人，却不说清楚每天干什么。这类招聘常见于主播、陪玩、引流、娱乐场所等岗位。",
+    "how": "每天具体做什么？要不要出镜、陪聊、陪酒？底薪多少，提成怎么算？工作地点在哪？"
+  },
+  {
+    "pattern_id": "P-SOFT-02",
+    "name": "岗位名和工作对不上",
+    "dimension": "title",
+    "level": "amber",
+    "why": "岗位名称听起来是坐办公室，实际工作是销售、电销或直播，入职后才发现干的不是一回事。",
+    "how": "这个岗位有没有业绩考核？要不要打电话、拉客户、出镜直播？"
+  },
+  {
+    "pattern_id": "P-SOFT-03",
+    "name": "只写福利不写工作",
+    "dimension": "work",
+    "level": "amber",
+    "why": "只讲福利、不讲工作，往往是工作内容不好说出口。",
+    "how": "能不能把岗位职责写清楚？一天的工作流程是什么样？"
+  },
+  {
+    "pattern_id": "P-SOFT-04",
+    "name": "把人往私聊引",
+    "dimension": "company",
+    "level": "amber",
+    "why": "绕开招聘平台私下沟通，平台就管不到了，出了问题很难维权。",
+    "how": "能不能在平台里沟通？公司全称和办公地址是什么？"
+  },
+  {
+    "pattern_id": "P-SOFT-05",
+    "name": "急招不设门槛",
+    "dimension": "pay",
+    "level": "amber",
+    "why": "门槛很低、待遇很高、还特别着急，正常招聘很少同时出现这三样。",
+    "how": "为什么这么急？底薪多少？试用期多久？"
+  },
+  {
+    "pattern_id": "P-SOFT-06",
+    "name": "先培训才能上岗",
+    "dimension": "work",
+    "level": "amber",
+    "why": "先培训再上岗，常见的坑是培训收费，或者让你办培训贷。",
+    "how": "培训要不要交钱？要不要办分期或贷款？培训期有没有工资？"
+  },
+  {
+    "pattern_id": "P-SOFT-07",
+    "name": "工作地点说不清",
+    "dimension": "company",
+    "level": "amber",
+    "why": "工作地点到了才告诉你，你就很难提前核实，也很难中途离开。",
+    "how": "具体在哪个城市、什么地址？能不能先发定位？"
   }
 ];
 
