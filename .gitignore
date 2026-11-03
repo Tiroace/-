@@ -42,3 +42,13 @@ Thumbs.db
 # 真机预览二维码（临时入口，含有时效链接，不入库）
 reports/真机预览二维码-*.jpg
 reports/_qr-run.log*
+
+# 真实招聘截图原件（含真实公司名/HR 信息，绝不入库）
+data/testset/_raw/
+data/testset/_raw_text/
+老板材料/
+
+# 提审截图工作区与出码临时图（草稿，不入库）
+reports/review14/
+reports/preview-qr-*.jpg
+
