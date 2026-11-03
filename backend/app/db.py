@@ -11,6 +11,8 @@ import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 
+from .db_adapter import Database as DatabaseAdapter
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
     id            TEXT PRIMARY KEY,
@@ -242,77 +244,14 @@ CREATE TABLE IF NOT EXISTS sensitive_words (
 """
 
 
-class Database:
-    def __init__(self, path: str | Path):
-        self.path = Path(path)
+class Database(DatabaseAdapter):
+    """保留原类名与构造签名，实现委托给 DatabaseAdapter（SQLite / MySQL 双引擎）。
 
-    def init(self) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        with self.connect() as conn:
-            conn.executescript(SCHEMA)
-            self._migrate(conn)
+    - Database(path)                    -> SQLite（本地与测试用）
+    - Database(path, db_url="mysql://…") -> MySQL（云托管用）
+    """
 
-    @staticmethod
-    def _migrate(conn) -> None:
-        """轻量迁移：老库补列，不破坏已有数据（正式版交给 Alembic）。"""
-        wanted = {
-            "analysis_tasks": {
-                "started_at": "TEXT",
-                "background_notified": "INTEGER NOT NULL DEFAULT 0",
-                "ocr_ms": "INTEGER",
-                "ocr_parallel": "INTEGER",
-                "ocr_images": "INTEGER",
-            },
-            "posts": {
-                "reviewed_by": "VARCHAR(40)",
-                "reviewed_at": "VARCHAR(19)",
-                "reject_reason": "VARCHAR(200)",
-                "needs_review": "INTEGER NOT NULL DEFAULT 0",
-                "hidden_reason": "VARCHAR(20)",
-                "review_round": "INTEGER NOT NULL DEFAULT 0",
-            },
-            "experiences": {
-                "reviewed_by": "VARCHAR(40)",
-                "reviewed_at": "VARCHAR(19)",
-            },
-            "votes": {
-                "counted": "INTEGER NOT NULL DEFAULT 1",
-                "risk_reason": "VARCHAR(40)",
-                "device_hash": "VARCHAR(64)",
-                "ip_prefix": "VARCHAR(40)",
-            },
-            "sensitive_words": {
-                "kind": "VARCHAR(10) NOT NULL DEFAULT 'word'",
-                "prompt": "VARCHAR(200)",
-                "as_type": "VARCHAR(20)",
-                "category": "VARCHAR(20)",
-            },
-        }
-        for table, columns in wanted.items():
-            existing = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})")}
-            for name, ddl in columns.items():
-                if name not in existing:
-                    conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}")
-
-    @contextmanager
-    def connect(self):
-        conn = sqlite3.connect(self.path, timeout=10, isolation_level=None)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON")
-        conn.execute("PRAGMA journal_mode = WAL")
-        try:
-            yield conn
-        finally:
-            conn.close()
-
-    @contextmanager
-    def transaction(self):
-        """BEGIN IMMEDIATE：额度类操作必须原子，防止并发超扣。"""
-        with self.connect() as conn:
-            conn.execute("BEGIN IMMEDIATE")
-            try:
-                yield conn
-                conn.execute("COMMIT")
-            except Exception:
-                conn.execute("ROLLBACK")
-                raise
+    def __init__(
+        self, path: str | Path | None = None, *, db_url: str | None = None, schema: str | None = None
+    ):
+        super().__init__(path, db_url=db_url, schema=schema or SCHEMA)

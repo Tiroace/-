@@ -12,10 +12,16 @@ _db: Database | None = None
 
 
 def get_db(settings: Settings | None = None) -> Database:
+    """取全局库单例。
+
+    QBL_DB_URL 指向 MySQL 时用 MySQL；否则用 SQLite（cfg.db_path）。
+    切换判断带上 db_url：测试里改连接串也能正确重建。
+    """
     global _db
     cfg = settings or get_settings()
-    if _db is None or _db.path != cfg.db_path:
-        _db = Database(cfg.db_path)
+    db_url = getattr(cfg, "db_url", "") or ""
+    if _db is None or _db.path != cfg.db_path or (getattr(_db, "db_url", "") or "") != db_url:
+        _db = Database(cfg.db_path, db_url=db_url or None)
         _db.init()
     return _db
 

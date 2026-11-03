@@ -113,6 +113,11 @@ class Settings:
     max_images: int = 3
     max_image_mb: int = 10
 
+    # ---- 数据库 ----
+    # sqlite://... 或 mysql://user:pass@host:3306/dbname?charset=utf8mb4
+    # 不填则用本地 SQLite（QBL_DB_PATH）。云托管切 MySQL 只需改这一项。
+    db_url: str = field(default_factory=lambda: os.environ.get("QBL_DB_URL", "").strip())
+
     # ---- 识别引擎 ----
     # rapidocr / sidecar。主启动预热与 OCR 适配器工厂都读这个字段
     # （engine_runner._get_ocr_adapter 用 getattr 兜底，但这里有字段更明确）。
