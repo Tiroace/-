@@ -136,7 +136,9 @@ class WechatContentSafety(ContentSafetyAdapter):
             return self._check_text(content)
         except Exception as exc:  # noqa: BLE001
             logger.warning("内容安全调用异常，已降级放行：%s", exc)
-            return TextCheck(suggest=SUGGEST_PASS, degraded=True, reason=f"调用异常：{type(exc).__name__}")
+            return TextCheck(
+                suggest=SUGGEST_PASS, code="degraded", degraded=True, reason=f"调用异常：{type(exc).__name__}"
+            )
 
     def _check_text(self, content: str) -> TextCheck:
         content = (content or "").strip()
@@ -150,11 +152,12 @@ class WechatContentSafety(ContentSafetyAdapter):
                 payload["openid"] = self.openid
             data = _post_json(url, payload, timeout=self.timeout)
         except WechatApiError as exc:
-            return TextCheck(suggest=SUGGEST_PASS, degraded=True, reason=str(exc))
+            return TextCheck(suggest=SUGGEST_PASS, code="degraded", degraded=True, reason=str(exc))
         errcode = int(data.get("errcode") or 0)
         if errcode != 0:
             return TextCheck(
                 suggest=SUGGEST_PASS,
+                code="degraded",
                 degraded=True,
                 reason=f"msgSecCheck 返回错误码 {errcode} {data.get('errmsg')}",
                 raw=data,

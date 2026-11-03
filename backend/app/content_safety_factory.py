@@ -23,6 +23,16 @@ class DisabledContentSafety(ContentSafetyAdapter):
     def check(self, images):
         return SafetyResult(True, "disabled", "内容安全已关闭（QBL_CONTENT_SAFETY=off）", {"engine": self.name})
 
+    def check_text(self, content: str):
+        from engine.adapters.content_safety import TextSafetyResult
+
+        return TextSafetyResult(
+            passed=True,
+            suggest="pass",
+            code="disabled",
+            reason="内容安全已关闭（QBL_CONTENT_SAFETY=off），未做文本检测",
+        )
+
 
 def _media_url_builder(settings: Settings):
     """图片异步检测要公网可访问的 URL：用配置的对外域名拼。
