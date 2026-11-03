@@ -25,6 +25,11 @@ def forbidden(message: str = "无权访问该资源") -> AppError:
     return AppError("FORBIDDEN", message, 403)
 
 
+# 400 旁路闸门：ocr_text 预置文本旁路只在开发期可用，生产一律拒绝
+def bypass_forbidden(message: str = "当前环境不允许使用 ocr_text 预置文本旁路") -> AppError:
+    return AppError("BYPASS_FORBIDDEN", message, 400)
+
+
 # 404
 def not_found(message: str = "资源不存在") -> AppError:
     return AppError("NOT_FOUND", message, 404)

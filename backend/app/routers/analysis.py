@@ -22,12 +22,12 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Request, UploadFile
 
-from engine.adapters.content_safety import LocalContentSafetyStub
+from ..content_safety_factory import build_content_safety, log_safety
 
 from .. import worker
 from ..config import get_settings
 from ..deps import current_user, envelope, get_db
-from ..errors import AppError, not_found, rate_limited, validation_error
+from ..errors import AppError, bypass_forbidden, not_found, rate_limited, validation_error
 from ..quota import balance, hold_for_analysis
 
 router = APIRouter(tags=["分析/报告"])
@@ -140,10 +140,16 @@ def _store_image(request: Request, user: dict, data: bytes, filename_hint, conte
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(data)
 
-    safety = LocalContentSafetyStub(max_files=1, max_mb=settings.max_image_mb).check([target])
+    # 内容安全第一道闸：按配置走微信真实接口或本地桩。
+    # 接口不可用 → 降级放行并记录（不阻塞用户），见 content_safety_factory.log_safety
+    safety_adapter = build_content_safety(settings, openid=user.get("openid", ""))
+    safety = safety_adapter.check([target])
+    log_safety(safety, where="upload", task_hint=f"image={image_id}")
     if not safety.passed:
         target.unlink(missing_ok=True)
         raise AppError("CONTENT_BLOCKED", f"图片未通过内容安全检测：{safety.reason}", 422)
+    # 内容安全第二道闸（文本）：截图里的文字要先识别才拿到，
+    # 所以在分析链路里做 msgSecCheck（worker 负责），这里不重复。
 
     expires_at = (dt.datetime.now() + dt.timedelta(hours=settings.upload_ttl_hours)).strftime(_TS_FMT)
     with get_db(settings).transaction() as conn:
@@ -282,6 +288,17 @@ async def create_analysis(request: Request, user: dict = Depends(current_user)) 
                 detail["dedupe_hit"] = True
                 detail["quota"] = {"balance": balance(conn, user_id)}
                 return envelope(detail, request)
+
+    # 旁路闸门：ocr_text 预置文本只允许开发期使用，且要 QBL_DEV_BYPASS=1。
+    # 生产环境（QBL_ENV=prod）无论开关怎么设一律拒绝——这是绕过真实 OCR 的通道，
+    # 上生产必须关死，否则调用方可以直接灌结论、绕开识别与内容安全。
+    # 放在预扣之前，保证被拦下的请求不扣次数、不留脏任务。
+    if ocr_text.strip() and (settings.is_production or not settings.dev_bypass):
+        raise bypass_forbidden(
+            "生产环境不允许 ocr_text 预置文本旁路"
+            if settings.is_production
+            else "已关闭 ocr_text 旁路（QBL_DEV_BYPASS=0）"
+        )
 
     task_id = "t_" + uuid.uuid4().hex[:16]
 
