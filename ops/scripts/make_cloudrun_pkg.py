@@ -24,6 +24,9 @@ DIST = OPS / "dist"
 # 运行时必需（对应 ops/Dockerfile.cloudrun 里的 COPY 指令）
 INCLUDE_DIRS = ["backend", "engine", "rules"]
 INCLUDE_FILES = ["requirements.txt", "backend/requirements.txt"]
+# 部署当天要在容器里跑的性能自检脚本（见 ops/evidence/ocr-cloudrun-baseline.md §4）
+# 不进这个包，云上就无法复测 21 张基线，D40 验收线验证不了。
+EXTRA_FILES = ["ops/scripts/ocr_baseline_21.py"]
 # 运行时必须排除的（即使在上面的目录里）
 EXCLUDE_PATTERNS = ["__pycache__", "*.pyc", "*.pyo", ".pytest_cache"]
 
@@ -69,6 +72,16 @@ def main() -> int:
             print(f"[pkg] 缺少必需目录：{d}")
             return 1
         shutil.copytree(src, out / d, ignore=_ignore, dirs_exist_ok=True)
+
+    # 额外的运行/自检脚本（保持原始相对路径，如 ops/scripts/xxx.py）
+    for f in EXTRA_FILES:
+        src = ROOT / f
+        if not src.exists():
+            print(f"[pkg] 警告：缺少附带脚本 {f}（部署当天将无法在云上跑基线）")
+            continue
+        dest = out / f
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dest)
 
     # 安全自检：不许带进密钥与数据
     leaked = []
