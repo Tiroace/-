@@ -53,11 +53,16 @@ def pct(values: list[float], p: float) -> float:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repeat", type=int, default=1)
+    ap.add_argument("--dir", default=None,
+                    help="图片目录。云托管容器里没有 data/，需上传图片后指定，如 --dir /app/var/testset")
     args = ap.parse_args()
 
-    imgs = sorted(RAW_DIR.glob("*.png"))
+    img_dir = Path(args.dir) if args.dir else RAW_DIR
+    imgs = sorted(img_dir.glob("*.png"))
     if not imgs:
-        print(f"[基线] 找不到图片：{RAW_DIR}")
+        print(f"[基线] 找不到图片：{img_dir}")
+        print("       云托管容器里请用 --dir 指定已上传的图片目录，")
+        print("       例如：python /app/ops/scripts/ocr_baseline_21.py --dir /app/var/testset")
         return 1
 
     env = env_snapshot()

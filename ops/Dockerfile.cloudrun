@@ -40,6 +40,10 @@ COPY engine/ ./engine/
 COPY rules/ ./rules/
 COPY backend/ ./backend/
 
+# 运维自检脚本：部署当天要在容器里跑 21 张真实图 OCR 基线，验证 D40 验收线
+# 只拷脚本本身，不拷整个 ops/（那份含文档与旧配置，不该进镜像）
+COPY ops/scripts/ocr_baseline_21.py ./ops/scripts/ocr_baseline_21.py
+
 # 运行时目录（容器本地盘，不持久；数据库请用云托管 MySQL 或外部存储）
 RUN mkdir -p /app/var/log /app/var/uploads /app/var/reports /app/var/cache \
     && groupadd -r qbl && useradd -r -g qbl -d /app -s /sbin/nologin qbl \
