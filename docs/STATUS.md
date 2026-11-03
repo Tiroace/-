@@ -330,6 +330,23 @@ P50 **6.01s**、P90 7.11s、最快 3.96s、最慢 7.74s。云托管容器规格*
 
 推理链：`e4425ac` 的 startup 第一件事是 `assert_production_ready()`；该函数仅在 `QBL_ENV=prod` 时才校验，且**任一密钥为空或为默认值就抛异常、容器拒绝启动**。服务能响应 → 校验通过 → 三密钥已替换。第 1、3 条正向证明生效的是**新令牌**而非默认值。
 
+**补充证据（2026-11-03 22:1x，Chief 执行、运维复核记录，详见 `ops/evidence/cloud-acceptance-report.md` §2.5）：**
+
+| 项 | 结果 |
+| --- | --- |
+| `GET /admin/stats` 不带 token | **403** |
+| 带 `env-secrets.txt` 里 43 位 `QBL_ADMIN_TOKEN` | **200**，返回 `{"users":0,"analysis_tasks":0,...}` |
+| 同一份响应里的 `QBL_ENV` | **`prod`** |
+| 同一份响应里的 `QBL_CONTENT_SAFETY` | **`auto`** → **`content_safety ≠ local` 成立** |
+
+**`QBL_ENV=prod` 的另一条独立证据（运维实测，走业务接口）：**
+```
+POST /analysis {"ocr_text":"x"}
+→ 400 {"code":"BYPASS_FORBIDDEN","message":"生产环境不允许 ocr_text 预置文本旁路"}
+```
+`backend/app/routers/analysis.py:296-300` 同一闸门由 `is_production` 二选一返回不同文案，实测拿到「生产环境不允许」⇒ `is_production == True`。
+**这条与管理接口互为正交**：一条证明「配置在控制行为」，一条证明「配置值本身对」。
+
 ### 11.3 真实图识别与耗时的正确判据（**`trace.ocr.source` 拿不到**）
 
 `backend/app/routers/analysis.py:62-91` 的 `_task_detail()` 明确**不暴露 trace 全文**（注释：里面有内部规则细节），只返回：
@@ -349,8 +366,11 @@ ocr_ms / ocr_parallel / ocr_images
 
 | 问题 | 影响 | 何时处理 |
 | --- | --- | --- |
-| `/docs` 与 `/openapi.json` **匿名可访问**（Swagger 暴露全部接口清单） | 安全：内部接口结构对外公开 | **提审前关闭** |
+| `/docs` 与 `/openapi.json` **匿名可访问**（`/openapi.json` 39,615 字节、36 个接口；`/admin/stats` 403、`/patterns` 401，鉴权本身正常） | 安全：内部接口结构对外公开 | **提审前关闭**：`FastAPI(docs_url=None, redoc_url=None, openapi_url=None)` |
+| **生产登录静默降级成 Mock**：`get_adapter()` 在 `QBL_WX_APPID`/`QBL_WX_SECRET` 缺失时回落 `MockAdapter`，任意随机 code 都发 token、每次登录建新用户送 3 次额度 | **高危**：可无限白嫖 OCR；真机内测验不出真实登录链路 | **内测前必须修**：`is_production` 且未配 AppID/Secret 时直接拒绝启动（与 `assert_production_ready()` 同一思路）。运维实测 `POST /auth/login {"code":"verify-prod-001"}` → 200 拿到 token |
 | 部署包 `e4425ac` 早于 `8ab93ce`，`/health` 缺三字段 | 运维取证不便（不影响功能） | 下次重新部署时用最新 main 构建 |
+| 生产库多 2 个孤立测试用户（`u_c8637068223a` 等，运维跑验收时用普通 code 登录创建） | 数据噪音，无权限风险 | 建议保留不删（删记录本身是写操作，风险更大）；必要时由开发给清洗脚本 |
+| 最小副本 = 1 | **未验证**（控制台是输入控件，文本读不出） | 老板或人在控制台看一眼 |
 
 ### 11.5 预览码（老板自测用）
 
