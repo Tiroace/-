@@ -11,6 +11,7 @@
 """
 from __future__ import annotations
 
+import base64
 import collections
 import datetime as dt
 import hashlib
@@ -127,7 +128,12 @@ def upload_image(request: Request, image: UploadFile = File(...), user: dict = D
     """
     settings = get_settings()
     data = image.file.read()
-    suffix = _validate_image_blob(data, image.filename, 0, settings)
+    return _store_image(request, user, data, image.filename, image.content_type, settings)
+
+
+def _store_image(request: Request, user: dict, data: bytes, filename_hint, content_type, settings) -> dict:
+    """multipart 与 base64 两个上传端点共用：校验 → 落盘 → 内容安全第一道闸 → 记 uploads。"""
+    suffix = _validate_image_blob(data, filename_hint, 0, settings)
     digest = hashlib.sha256(data).hexdigest()
     image_id = "i_" + uuid.uuid4().hex[:16]
     target = settings.upload_dir / "images" / f"{image_id}{suffix}"
@@ -144,7 +150,7 @@ def upload_image(request: Request, image: UploadFile = File(...), user: dict = D
         conn.execute(
             "INSERT INTO uploads (id, user_id, file_hash, path, size, content_type, expires_at, created_at)"
             " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (image_id, user["id"], digest, str(target), len(data), image.content_type, expires_at, _now()),
+            (image_id, user["id"], digest, str(target), len(data), content_type, expires_at, _now()),
         )
     return envelope(
         {
@@ -156,6 +162,52 @@ def upload_image(request: Request, image: UploadFile = File(...), user: dict = D
         },
         request,
     )
+
+
+@router.post("/analysis/upload-base64")
+async def upload_image_base64(request: Request, user: dict = Depends(current_user)) -> dict:
+    """上传单张截图（base64 JSON），返回 image_id。
+
+    为什么有这一条：微信云托管默认关闭公网访问，小程序端只能走 wx.cloud.callContainer，
+    而 callContainer 不支持 multipart。所以云端链路用 JSON 传图：
+        POST /analysis/upload-base64  {"image_b64": "...", "mime": "image/jpeg"}
+    旧的 multipart 端点保留不删——本地开发、以后开公网仍然用它。
+
+    前端上传前已压到 ≤200KB、边长 ≤1080；这里仍按 max_image_mb 校验，
+    防绕过前端直接调接口。两条通道共用 _store_image，内容安全与落盘逻辑完全一致。
+    """
+    settings = get_settings()
+    try:
+        body = await request.json()
+    except Exception as exc:  # noqa: BLE001
+        raise validation_error('请求体必须是 JSON：{"image_b64": "...", "mime": "image/jpeg"}') from exc
+    if not isinstance(body, dict):
+        raise validation_error("请求体必须是 JSON 对象")
+
+    raw = body.get("image_b64") or body.get("imageBase64") or ""
+    if not isinstance(raw, str) or not raw.strip():
+        raise validation_error("缺少 image_b64")
+    mime = str(body.get("mime") or "").lower()
+    # 兼容 data URI 前缀：data:image/jpeg;base64,xxxx
+    if raw.startswith("data:"):
+        header, _, raw = raw.partition(",")
+        if not mime and ";" in header:
+            mime = header[5:].split(";")[0].lower()
+    try:
+        data = base64.b64decode(raw, validate=True)
+    except Exception as exc:  # noqa: BLE001
+        raise validation_error("image_b64 不是合法的 base64") from exc
+    if not data:
+        raise validation_error("图片内容为空")
+
+    # 有 mime 就用它定扩展名；没有就交给 _validate_image_blob 按默认 png 处理
+    suffix_hint = {
+        "image/png": ".png",
+        "image/jpeg": ".jpg",
+        "image/jpg": ".jpg",
+        "image/webp": ".webp",
+    }.get(mime)
+    return _store_image(request, user, data, suffix_hint, mime or "image/png", settings)
 
 
 @router.post("/analysis")
