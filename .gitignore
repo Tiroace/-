@@ -52,3 +52,8 @@ data/testset/_raw_text/
 reports/review14/
 reports/preview-qr-*.jpg
 
+
+# 出码/上传用的临时构建目录（构建产物不入库）
+reports/upload-*/
+reports/preview-*.jpg
+
