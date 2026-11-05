@@ -308,6 +308,10 @@ async function runRulePath() {
     }
     const { report, meta } = buildRuleReport(ocr.text, { minChars: MIN_OCR_CHARS });
     submitting.value = false;
+    // 真机验收要报「认出来的文字和耗时」，所以把认字耗时与字数带进 meta，
+    // 报告页的「本机判断」标签能核对（不改报告 JSON 结构）。
+    meta.ocr_ms = ocr.ms;
+    meta.ocr_failed = ocr.failedCount;
     // 扣次数：只扣真正的招聘检查；不是招聘截图不扣
     if (report.is_job_posting) setLocalFreeLeft(localFreeLeft() - 1);
     saveHistory(report, {

@@ -1,127 +1,144 @@
-// 手机本地认字（微信 VisionKit）：截图不上传，认字在手机上完成。
+// 手机认字：微信 VisionKit 静态图 OCR。
 //
-// 老板 2026-11-05 双版本令第二节：规则版全部在手机上跑。
-// VisionKit 是微信提供的能力，接口是 wx.visionKit（基础库 3.x+，需在后台开通「VisionKit 通用识别」）。
-// 这里不猜接口：先用 capability 探测，探不到就返回 unsupported，
-// 由上层提示「没认出文字，换一张清楚的截图，或把微信升级到最新版」，不扣次数、不退回服务器。
+// 实现严格照《识别架构改造令》第三节第 2 条给出的代码写（老板 2026-11-05 明确指示
+// 「ocr.js 不存在，就按第三节第 2 条的代码新写」）。
 //
-// 用户可见文案里不能出现「AI」（路线调整令 §6），所以这里统一叫「认字」。
+// 关键点（不要自己「优化」掉）：
+// - 能力探测看 wx.createVKSession 且基础库 ≥ 2.27.0，不支持时 resolve(null)；
+// - 用 createVKSession({ track: { OCR: { mode: 2 } } })，runOCR 喂 RGBA 像素；
+// - 结果从 'updateAnchors' 事件拿，anchor.text 按行用 \n 拼；
+// - 字段名/事件名以官方文档为准：
+//   https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/visionkit/ocr.html
+//   第一次真机必须把 anchors 原样打印出来确认字段；
+// - updateAnchors 没触发或返回空，就当不支持处理。
+//
+// 与改造令原文的两点差异，都是本项目的约束，不是随意改动：
+// 1. 改造令原文写「不支持时退回服务器流程」，但规则版没有服务器（双版本令第二节），
+//    所以这里只返回 null / 失败原因，由首页决定怎么提示——规则版提示换图、不扣次数；
+// 2. 加了 isPhoneOcrSupported 的别名 isOcrSupported，供首页复用，逻辑同一个。
+//
+// 用户可见文案里不出现「AI」（路线调整令 §6），统一叫「认字」。
 
-const MAX_SIDE = 1600;
+const OCR_MIN_SDK = '2.27.0';
+const DEFAULT_MAX_SIDE = 1600;
+const DEFAULT_TIMEOUT = 8000;
 
-function getWx() {
-  return typeof globalThis !== 'undefined' ? globalThis.wx : undefined;
+export function isPhoneOcrSupported() {
+  const wx = globalThis.wx;
+  if (!wx || typeof wx.createVKSession !== 'function') return false;
+  try {
+    const v = wx.getAppBaseInfo ? wx.getAppBaseInfo().SDKVersion : wx.getSystemInfoSync().SDKVersion;
+    return compareVersion(v, OCR_MIN_SDK) >= 0;
+  } catch (e) {
+    return false;
+  }
 }
 
-// 是否支持手机认字：有 VisionKit 就说支持
-export function isOcrSupported() {
-  const wx = getWx();
-  if (!wx) return false;
-  return typeof wx.visionKit !== 'undefined' && !!wx.visionKit && typeof wx.visionKit.ocr === 'function';
-}
+// 别名：首页统一用这个名字判断
+export const isOcrSupported = isPhoneOcrSupported;
 
-// 把 VisionKit 返回的结构压成纯文本。
-// 不同基础库返回结构可能不一样（woris / words / lines），这里做兼容，
-// 认不出任何结构就返回空串，让上层按「没认出字」处理，绝不猜。
-export function extractText(result) {
-  if (!result) return '';
-  if (typeof result === 'string') return result;
-  const out = [];
-
-  // 结构一：{ woris: [{ text }] }
-  if (Array.isArray(result.woris)) {
-    result.woris.forEach((w) => {
-      if (w && w.text) out.push(String(w.text));
-    });
-  }
-  // 结构二：{ words: [{ text }] }
-  if (!out.length && Array.isArray(result.words)) {
-    result.words.forEach((w) => {
-      if (w && w.text) out.push(String(w.text));
-    });
-  }
-  // 结构三：{ lines: [{ text }] }
-  if (!out.length && Array.isArray(result.lines)) {
-    result.lines.forEach((l) => {
-      if (l && l.text) out.push(String(l.text));
-    });
-  }
-  // 结构四：{ result: '整段文字' }
-  if (!out.length && typeof result.result === 'string') return result.result;
-  // 结构五：{ text }
-  if (!out.length && typeof result.text === 'string') return result.text;
-
-  return out.join('\n');
-}
-
-// 压缩到长边 ≤1600，和改造令第二节一致（太大 VisionKit 也慢）
-function compress(filePath) {
-  const wx = getWx();
+// 返回 { text, ms } 或 null
+export function phoneOcr(filePath, { maxSide = DEFAULT_MAX_SIDE, timeout = DEFAULT_TIMEOUT } = {}) {
+  const wx = globalThis.wx;
+  if (!wx) return Promise.resolve(null);
+  const t0 = Date.now();
   return new Promise((resolve) => {
-    if (!wx || typeof wx.getImageInfo !== 'function') return resolve(filePath);
+    let done = false;
+    let session = null;
+    const finish = (val) => {
+      if (done) return;
+      done = true;
+      try {
+        if (session) session.destroy();
+      } catch (e) {
+        /* destroy 失败不影响结果 */
+      }
+      resolve(val);
+    };
+    const timer = setTimeout(() => finish(null), timeout);
+
     wx.getImageInfo({
       src: filePath,
       success: (info) => {
-        const w = Number(info.width) || 0;
-        const h = Number(info.height) || 0;
-        if (!w || !h || Math.max(w, h) <= MAX_SIDE) return resolve(filePath);
-        const scale = MAX_SIDE / Math.max(w, h);
-        const nw = Math.round(w * scale);
-        const nh = Math.round(h * scale);
-        if (typeof wx.compressImage !== 'function') return resolve(filePath);
-        wx.compressImage({
-          src: filePath,
-          quality: 85,
-          compressedWidth: nw,
-          compressedHeight: nh,
-          success: (res) => resolve(res.tempFilePath || filePath),
-          fail: () => resolve(filePath),
-        });
+        try {
+          const scale = Math.min(1, maxSide / Math.max(info.width, info.height));
+          const w = Math.round(info.width * scale);
+          const h = Math.round(info.height * scale);
+          const canvas = wx.createOffscreenCanvas({ type: '2d', width: w, height: h });
+          const ctx = canvas.getContext('2d');
+          const img = canvas.createImage();
+          img.onload = () => {
+            try {
+              ctx.drawImage(img, 0, 0, w, h);
+              const pixels = ctx.getImageData(0, 0, w, h).data.buffer; // RGBA
+
+              session = wx.createVKSession({ track: { OCR: { mode: 2 } } });
+              session.on('updateAnchors', (anchors) => {
+                // 第一次接入时把 anchors 原样打印，确认字段名（文档写 anchor.text / anchor.box）
+                const lines = (anchors || []).map((a) => a.text || '').filter(Boolean);
+                clearTimeout(timer);
+                finish({ text: lines.join('\n'), ms: Date.now() - t0 });
+              });
+              session.start((err) => {
+                if (err) {
+                  clearTimeout(timer);
+                  return finish(null);
+                }
+                session.runOCR({ frameBuffer: pixels, width: w, height: h });
+              });
+            } catch (e) {
+              clearTimeout(timer);
+              finish(null);
+            }
+          };
+          img.onerror = () => {
+            clearTimeout(timer);
+            finish(null);
+          };
+          img.src = filePath;
+        } catch (e) {
+          clearTimeout(timer);
+          finish(null);
+        }
       },
-      fail: () => resolve(filePath),
+      fail: () => {
+        clearTimeout(timer);
+        finish(null);
+      },
     });
   });
 }
 
-// 认一张图。resolve { ok, text, reason }
-// ok=false 时 reason 只有这几种：'unsupported' / 'fail' / 'empty'
-function recognizeOne(filePath) {
-  const wx = getWx();
-  return new Promise((resolve) => {
-    if (!isOcrSupported()) return resolve({ ok: false, reason: 'unsupported' });
-    try {
-      wx.visionKit.ocr({
-        type: 'general',
-        src: filePath,
-        success: (res) => {
-          const text = extractText(res);
-          if (!String(text || '').trim()) return resolve({ ok: false, reason: 'empty' });
-          resolve({ ok: true, text });
-        },
-        fail: () => resolve({ ok: false, reason: 'fail' }),
-      });
-    } catch (e) {
-      resolve({ ok: false, reason: 'fail' });
-    }
-  });
-}
-
-// 认多张图（最多 3 张）。按顺序拼起来，保留换行，便于证据按行定位。
-// 返回 { ok, text, failedCount }：
-//   ok=true 表示至少认出一张有字的图；text 是拼好的全文。
+// 多张图：逐张识别，文字用 \n---\n 拼起来（改造令第三节第 2 条原文要求）
+// 返回 { ok, text, ms, failedCount }
 export async function recognizeImages(paths) {
-  if (!isOcrSupported()) return { ok: false, text: '', failedCount: 0, reason: 'unsupported' };
+  if (!isPhoneOcrSupported()) return { ok: false, text: '', ms: 0, failedCount: 0, reason: 'unsupported' };
+  const t0 = Date.now();
   const parts = [];
   let failedCount = 0;
   const list = (paths || []).slice(0, 3);
   for (let i = 0; i < list.length; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    const src = await compress(list[i]);
-    // eslint-disable-next-line no-await-in-loop
-    const r = await recognizeOne(src);
-    if (r.ok) parts.push(r.text);
+    const r = await phoneOcr(list[i]);
+    if (r && r.text) parts.push(r.text);
     else failedCount += 1;
   }
-  const text = parts.join('\n').trim();
-  return { ok: !!text, text, failedCount, reason: text ? '' : 'empty' };
+  const text = parts.join('\n---\n').trim();
+  return {
+    ok: !!text,
+    text,
+    ms: Date.now() - t0,
+    failedCount,
+    reason: text ? '' : failedCount === list.length ? 'unsupported' : 'empty',
+  };
+}
+
+function compareVersion(a, b) {
+  const x = String(a).split('.');
+  const y = String(b).split('.');
+  for (let i = 0; i < 3; i += 1) {
+    const d = parseInt(x[i] || 0, 10) - parseInt(y[i] || 0, 10);
+    if (d) return d;
+  }
+  return 0;
 }
