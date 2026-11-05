@@ -116,6 +116,8 @@ import { fetchReports } from '@/services/api.js';
 import { APP_NAME, APP_VERSION } from '@/common/brand.js';
 import { isMembershipVisible } from '@/common/entitlement.js';
 import { isUnlimitedEnv } from '@/common/env.js';
+import { USE_DEEPSEEK } from '@/common/config.js';
+import { listHistory, getHistory } from '@/services/history.js';
 import { detectPlatform, PLATFORM_LABELS } from '@/platform/detect.js';
 
 defineOptions({ name: 'MinePage' });
@@ -161,6 +163,12 @@ function formatExpire(s) {
   return Number(m[2]) + ' 月 ' + Number(m[3]) + ' 日';
 }
 
+// 本地记录的毫秒时间戳 → 「M 月 D 日」
+function formatAt(ms) {
+  const d = new Date(Number(ms) || Date.now());
+  return d.getMonth() + 1 + ' 月 ' + d.getDate() + ' 日';
+}
+
 // 旧契约的 risk_level → 新灯色
 function overallToLamp(level) {
   const map = { high: 'red', warn: 'amber', notice: 'amber', safe: 'green' };
@@ -177,7 +185,24 @@ function loadReports() {
     });
 }
 
+// 规则版（提审用）不与服务器通信：检查记录、次数全部读本地（双版本令第二节第 2 条）。
+function loadLocal() {
+  const list = listHistory();
+  reports.value = list.map((h) => ({
+    report_id: h.id,
+    summary: h.summary,
+    risk_level: h.overall,
+    created_at: formatAt(h.at),
+    local: true,
+  }));
+  user.value = null;
+}
+
 function load() {
+  if (!USE_DEEPSEEK) {
+    loadLocal();
+    return;
+  }
   ensureLogin()
     .then((u) => {
       user.value = u;
@@ -194,6 +219,10 @@ function load() {
 
 onMounted(load);
 onShow(() => {
+  if (!USE_DEEPSEEK) {
+    loadLocal();
+    return;
+  }
   if (getUser()) {
     refreshUser()
       .then((u) => {
@@ -205,6 +234,17 @@ onShow(() => {
 });
 
 function openReport(r) {
+  // 规则版：记录在本地，直接带 id 打开本地报告（不发请求）
+  if (r && r.local) {
+    const h = getHistory(r.report_id);
+    const app = getApp();
+    if (h && h.report && app && app.globalData) {
+      app.globalData.lastReport = h.report;
+      app.globalData.lastReportMeta = { scheme_title: h.scheme_title, scheme: null };
+      uni.navigateTo({ url: '/pages/report/index?local=1' });
+      return;
+    }
+  }
   const q = r.task_id ? 'task_id=' + r.task_id : 'report_id=' + r.report_id;
   uni.navigateTo({ url: '/pages/report/index?' + q });
 }

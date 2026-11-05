@@ -1,16 +1,18 @@
-// 检查记录（老板 2026-11-04 定）：每次查完把报告 JSON、时间、红黄绿、套路标题存进手机本地
+// 检查记录（老板 2026-11-04 定，2026-11-05 双版本令微调）：每次查完把报告 JSON、时间、红黄绿、套路标题存手机本地
 //
 // 规则：
-// - 保留 7 天、最多 50 条；
+// - 保留 7 天；
+// - 最多条数：规则版（提审用）20 条，DeepSeek 版 50 条（双版本令第二节第 2 条 vs 第四节原文）；
 // - **不存截图**（只存文字与结论）；
 // - 「我的」页列表从这里取，点开能重看；
 // - 「查过的工作」「亮过的红灯」两个数也从这里算。
 //
 // 全部用 uni.getStorageSync / setStorageSync，不依赖网络。
+import { USE_DEEPSEEK } from '@/common/config.js';
 
 const KEY = 'qbl_history_v1';
 const KEEP_DAYS = 7;
-const KEEP_MAX = 50;
+export const KEEP_MAX = USE_DEEPSEEK ? 50 : 20;
 
 function nowMs() {
   return Date.now();

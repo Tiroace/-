@@ -7,36 +7,43 @@
       <text class="hero-title">去面试之前，{{ '\n' }}先让我看一眼</text>
       <text class="hero-sub">招聘截图发过来，30 秒告诉你这份工作有没有坑。</text>
 
-      <!-- 上传卡 -->
-      <view class="card upload">
-        <!-- 插画：三张截图，中间一张标出可疑行 -->
-        <view class="illus" aria-hidden="true">
-          <view class="shot l"></view>
-          <view class="shot r"></view>
-          <view class="shot m">
-            <view class="bar-line" style="width: 70%"></view>
-            <view class="bar-line" style="width: 90%"></view>
-            <view class="bar-line hit" style="width: 100%"></view>
-            <view class="bar-line" style="width: 55%"></view>
-            <view class="bar-line" style="width: 80%"></view>
-          </view>
-          <view class="bang">!</view>
-        </view>
-
+      <!-- 上传卡（老板 2026-11-05 双版本令第四节第 3 条）：
+           整张卡都能点，虚线框；中间是上传图标 + 文案；选好图后显示缩略图（右上角可删） -->
+      <view class="card upload upload-card" :class="{ 'upload-card-has': images.length }" @tap="onPickCard">
         <!-- 已选截图缩略图（可删除） -->
         <view v-if="images.length" class="thumbs">
           <view v-for="(img, idx) in images" :key="img.path" class="thumb">
             <image class="thumb-img" :src="img.path" mode="aspectFill" />
-            <view class="thumb-del" @tap="removeImage(idx)">
+            <view class="thumb-del" @tap.stop="removeImage(idx)">
               <text class="thumb-del-text">×</text>
             </view>
           </view>
+          <view v-if="images.length < 3" class="thumb thumb-add" @tap.stop="chooseImages">
+            <text class="thumb-add-plus">+</text>
+            <text class="thumb-add-t">再加一张</text>
+          </view>
         </view>
 
-        <text class="up-title">把招聘截图发给我</text>
-        <text class="up-sub">岗位详情、HR 聊天记录都行，一次最多 3 张。</text>
+        <view class="upload-dashed">
+          <!-- 插画：三张截图，中间一张标出可疑行 -->
+          <view class="illus" aria-hidden="true">
+            <view class="shot l"></view>
+            <view class="shot r"></view>
+            <view class="shot m">
+              <view class="bar-line" style="width: 70%"></view>
+              <view class="bar-line" style="width: 90%"></view>
+              <view class="bar-line hit" style="width: 100%"></view>
+              <view class="bar-line" style="width: 55%"></view>
+              <view class="bar-line" style="width: 80%"></view>
+            </view>
+            <view class="bang">!</view>
+          </view>
 
-        <view class="btn-primary" :class="{ 'btn-busy': submitting }" @tap="onPickOrStart">
+          <text class="up-title">点这里选截图</text>
+          <text class="up-sub">最多 3 张，岗位详情和聊天记录一起传更准</text>
+        </view>
+
+        <view class="btn-primary" :class="{ 'btn-busy': submitting }" @tap.stop="onPickOrStart">
           <text>{{ buttonText }}</text>
         </view>
 
@@ -129,9 +136,14 @@ import QuotaSheet from '@/components/QuotaSheet.vue';
 import { ensureLogin, getUser, refreshUser } from '@/services/session.js';
 import { createAnalysis, uploadImage, claimAdReward, newRequestId, ApiError } from '@/services/api.js';
 // 改造令 §〇：截图直发 DeepSeek 识图（失败静默退回上面的服务器流程）
+// 双版本令第三节：规则版不得包含 DeepSeek 相关代码。
+// 做法是在 vite.config.js 里把整个 judge.js 换成空实现（引擎为 rules 时），
+// 规则版包里因此不会出现提示词、接口地址和模型名；构建后另有脚本逐词扫产物兜底。
 import { isVisionJudgeAvailable, toBase64, judgeImages, validateHits } from '@/services/judge.js';
 import { buildLocalReport } from '@/services/localReport.js';
-import { DEEPSEEK_MAX_IMAGES, MIN_OCR_CHARS, QUOTA_RULES } from '@/common/config.js';
+import { buildRuleReport } from '@/services/rules.js';
+import { recognizeImages } from '@/platform/ocr.js';
+import { DEEPSEEK_MAX_IMAGES, MIN_OCR_CHARS, QUOTA_RULES, USE_DEEPSEEK } from '@/common/config.js';
 import { runRewardedFlow, canTriggerAd } from '@/common/adGuard.js';
 import { canBuyMember, isMembershipVisible } from '@/common/entitlement.js';
 import { getAdUnitId } from '@/common/config.js';
@@ -152,7 +164,8 @@ defineOptions({
 const images = ref([]);
 const submitting = ref(false);
 const balance = ref(0);
-const adRemaining = ref(5);
+// 规则版没有广告位（流量主未开通）：初始 0，次数用完弹窗里就不出现「看广告换 1 次」
+const adRemaining = ref(USE_DEEPSEEK ? 5 : 0);
 const adCap = ref(5);
 const adLoading = ref(false);
 const showQuota = ref(false);
@@ -184,17 +197,28 @@ function syncUser(user) {
   }
   // 本地识图路径可用时，次数以本地为准：否则会出现「显示 3 次、实际已用掉」的矛盾
   if (isVisionJudgeAvailable()) balance.value = localFreeLeft();
+  // 规则版：没有服务器，次数一律取本地
+  if (!USE_DEEPSEEK) balance.value = localFreeLeft();
   // 开发版/体验版不限次数：模板用 isUnlimited 显示「内测期间不限次数」，
   // 这里给一个足够大的数，避免后续任何 <= 0 的判断误拦
   if (isUnlimitedEnv()) balance.value = 999999;
 }
 
 // 纯本地路径下不能显示「还能免费查 0 次」就拦住检查，次数由本地控制
+// 规则版全本地；DeepSeek 版有密钥时也走全本地
 function localPathActive() {
+  if (!USE_DEEPSEEK) return true;
   return isVisionJudgeAvailable();
 }
 
+// 规则版（提审用）不与任何服务器通信：不登录、不拉用户信息、不上报。
+// 双版本令第二节第 2 条：规则版「不调服务器、不调云托管、不调云 OCR、不调 DeepSeek」。
 onMounted(() => {
+  if (!USE_DEEPSEEK) {
+    // 纯本地：次数直接取本地，不发起任何请求
+    balance.value = isUnlimitedEnv() ? 999999 : localFreeLeft();
+    return;
+  }
   ensureLogin()
     .then((u) => {
       syncUser(u);
@@ -205,8 +229,19 @@ onMounted(() => {
 });
 
 onShow(() => {
+  if (!USE_DEEPSEEK) {
+    balance.value = isUnlimitedEnv() ? 999999 : localFreeLeft();
+    return;
+  }
   if (getUser()) refreshUser().then(syncUser).catch(() => {});
 });
+
+// 上传卡整张都能点（老板 2026-11-05 双版本令第四节第 3 条）：
+// 卡里已选图时点空白处继续加图，没选图时点卡选图；按钮和缩略图各自有 stop 处理。
+function onPickCard() {
+  if (submitting.value) return;
+  if (images.value.length < 3) chooseImages();
+}
 
 // 主按钮：没选图先选图，选了图就开始检查
 function onPickOrStart() {
@@ -246,11 +281,62 @@ function removeImage(idx) {
 
 function startAnalysis() {
   submitting.value = true;
+  // 规则版（提审用）：全手机本地，不碰服务器。DeepSeek 版沿用原流程。
+  if (!USE_DEEPSEEK) {
+    runRulePath();
+    return;
+  }
   runLocalThenFallback();
+}
+
+// 规则版主流程（双版本令第二节）：
+//   手机认字 → 关键词规则 + 套路匹配 → 拼报告 → 报告页
+// 任何一步失败都不退回服务器（规则版没有服务器），按「没认出文字」提示，且不扣次数。
+async function runRulePath() {
+  const paths = images.value.map((i) => i.path);
+  try {
+    const ocr = await recognizeImages(paths);
+    if (!ocr.ok) {
+      submitting.value = false;
+      // 手机不支持 VisionKit 或认出的字太少：不扣次数，不退回服务器
+      uni.showToast({
+        title: '没认出文字，换一张清楚的截图，或把微信升级到最新版',
+        icon: 'none',
+        duration: 3000,
+      });
+      return;
+    }
+    const { report, meta } = buildRuleReport(ocr.text, { minChars: MIN_OCR_CHARS });
+    submitting.value = false;
+    // 扣次数：只扣真正的招聘检查；不是招聘截图不扣
+    if (report.is_job_posting) setLocalFreeLeft(localFreeLeft() - 1);
+    saveHistory(report, {
+      schemeTitle: (meta.scheme && meta.scheme.title) || '',
+      schemeId: meta.scheme_id || '',
+      patterns: (report.findings || []).map((f) => f.pattern_id).filter(Boolean),
+    });
+    const app = getApp();
+    if (app && app.globalData) {
+      app.globalData.lastReport = report;
+      app.globalData.lastReportMeta = meta;
+    }
+    if (isJobUnlimited()) balance.value = 999999;
+    else balance.value = localFreeLeft();
+    uni.navigateTo({ url: '/pages/report/index?local=1' });
+  } catch (e) {
+    submitting.value = false;
+    uni.showToast({ title: '检查没做完，次数没扣，请再试一次', icon: 'none' });
+  }
+}
+
+// 规则版没有服务器，次数一律以本地为准；开发版/体验版仍不限次数
+function isJobUnlimited() {
+  return isUnlimitedEnv();
 }
 
 // 新路径（改造令 §〇）：截图直发 DeepSeek 识图，一次完成认字 + 判断。
 // 任何一步失败都返回 null，静默走原来的服务器流程（用户无感知）。
+// 双版本令：这段只在 DeepSeek 版编译进包，规则版产物里一个字都不留。
 async function runLocal(paths) {
   if (!isVisionJudgeAvailable()) return null;
   try {
@@ -295,6 +381,7 @@ function setLocalFreeLeft(n) {
   }
 }
 
+// 双版本令：退回服务器流程只在 DeepSeek 版里编进包（规则版没有服务器，不能有任何退回路径）
 async function runLocalThenFallback() {
   const paths = images.value.map((i) => i.path);
   let local = null;
@@ -403,7 +490,9 @@ function openSampleReport() {
 }
 
 // 看广告换次数：用户点了按钮才创建广告（§6.2）
+// 规则版没有广告位（流量主未开通），按钮不渲染，这里也直接返回，不发任何请求。
 function onWatchAd() {
+  if (!USE_DEEPSEEK) return;
   if (adLoading.value) return;
   if (!canTriggerAd('index')) {
     uni.showToast({ title: '操作太频繁了，请稍后再试', icon: 'none' });
@@ -490,6 +579,33 @@ function gotoAiDoc() {
   margin-top: 46rpx;
   border-radius: 46rpx;
   padding: 38rpx;
+}
+
+// 上传卡（老板 2026-11-05 双版本令第四节第 3 条）：整张卡都能点，虚线框
+.upload-card {
+  // 虚线框用 dashed border，颜色沿用已有的 $off
+  border: 3rpx dashed $off;
+}
+.upload-dashed {
+  display: block;
+}
+.thumb-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx dashed $off;
+  background: $surface-2;
+}
+.thumb-add-plus {
+  font-size: 44rpx;
+  line-height: 1;
+  color: $ink-2;
+}
+.thumb-add-t {
+  margin-top: 8rpx;
+  font-size: 21rpx;
+  color: $ink-2;
 }
 
 // 插画区：设计稿 128 高 → 246rpx

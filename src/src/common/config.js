@@ -7,7 +7,15 @@ import { detectPlatform } from '@/platform/detect.js';
 // - 生产构建（uni build -p mp-weixin）：默认空串，产物里不会出现内网地址
 // - 覆盖方式：$env:VITE_API_BASE_URL = "http://x.x.x.x:8000" 后再构建
 // 运行时再用本地存储 qiuzhibilei_api_base 覆盖（「开发自测」页）。
-/* global __QBL_API_BASE_URL__, __QBL_CLOUD_ENV__, __QBL_CLOUD_SERVICE__, __QBL_DEEPSEEK_KEY__ */
+/* global __QBL_API_BASE_URL__, __QBL_CLOUD_ENV__, __QBL_CLOUD_SERVICE__, __QBL_DEEPSEEK_KEY__, __QBL_ENGINE__ */
+
+// 引擎开关（老板 2026-11-05 双版本令第三节）：一套代码出两个包。
+//   VITE_ENGINE 不设或设成别的值 → 'rules'（规则版，全手机本地，提审用这一版）
+//   VITE_ENGINE=deepseek          → DeepSeek 识图版，只能内部测试，不得提审
+// 默认必须是 rules：忘了设开关，出来的就是规则版。
+export const ENGINE = typeof __QBL_ENGINE__ !== 'undefined' ? __QBL_ENGINE__ : 'rules';
+export const USE_DEEPSEEK = ENGINE === 'deepseek';
+
 export const DEV_API_BASE_URL =
   typeof __QBL_API_BASE_URL__ !== 'undefined' ? __QBL_API_BASE_URL__ : '';
 
@@ -33,6 +41,9 @@ export const DEEPSEEK_THINKING = { type: 'disabled' };
 // 本地识图路径的标识，便于核对线上跑的是哪条路径
 export const LOCAL_RULES_VERSION = 'v3.0+ds';
 export const LOCAL_ENGINE = 'deepseek';
+// 规则版（全手机本地）的 rules_version：双版本令第二节要求写 'v3.0-local'。
+// 报告对象里仍然写规范值 SCHEMA_RULES_VERSION，'v3.0-local' 放 meta.path_tag。
+export const RULE_RULES_VERSION = 'v3.0-local';
 // 报告里 rules_version / pattern_db_version 必须过 engine/schema.py 的格式校验：
 //   rules_version  ^v\d+\.\d+$   pattern_db_version  ^\d{4}-\d{2}-\d{2}$
 // 所以报告内写规范值，'v3.0+ds' 这种带后缀的只放在 meta.path_tag 里做排查用。

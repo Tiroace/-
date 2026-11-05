@@ -17,7 +17,12 @@
     "check:report": "node scripts/check-report-v2.mjs",
     "check:r3": "node scripts/check-r3.mjs",
     "check:all": "npm run check:r1 && npm run check:report && npm run check:r3",
-    "validate:dist": "node tests/validate-dist.mjs dist/build/mp-weixin"
+    "validate:dist": "node tests/validate-dist.mjs dist/build/mp-weixin",
+    "check:rules": "node --import ./tests/register-alias.mjs tests/check-rules.mjs",
+    "build:rules": "node scripts/build-engine.mjs rules",
+    "build:rules:review": "node scripts/build-engine.mjs rules review",
+    "build:deepseek": "node scripts/build-engine.mjs deepseek",
+    "check:rules:build": "node scripts/check-rules-build.mjs dist/build/mp-weixin"
   },
   "dependencies": {
     "@dcloudio/uni-app": "3.0.0-4060620250520001",

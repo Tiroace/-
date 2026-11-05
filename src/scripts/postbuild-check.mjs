@@ -112,9 +112,12 @@ if (fs.existsSync(reportJs)) {
 const docWxml = path.join(DIST, 'pages/doc/index.wxml');
 if (fs.existsSync(docWxml)) {
   const w = fs.readFileSync(docWxml, 'utf8');
-  // 页面文案在 js 里定义
+  // 文案在 js 里定义；两版各一份，按引擎选用后集中在 common/docTexts.js
   const docJs = path.join(DIST, 'pages/doc/index.js');
-  const jsText = fs.existsSync(docJs) ? fs.readFileSync(docJs, 'utf8') : '';
+  const docTextsJs = path.join(DIST, 'common/docTexts.js');
+  const jsText =
+    (fs.existsSync(docJs) ? fs.readFileSync(docJs, 'utf8') : '') +
+    (fs.existsSync(docTextsJs) ? fs.readFileSync(docTextsJs, 'utf8') : '');
   jsText.includes('检查规则说明') ? ok('检查规则说明页在包内') : bad('缺检查规则说明页内容');
 }
 const corpJs = fs.existsSync(reportJs) ? fs.readFileSync(reportJs, 'utf8') : '';

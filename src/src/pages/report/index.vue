@@ -32,6 +32,22 @@
       <!-- ③ 依据行 -->
       <text class="basis">依据你上传的截图，{{ checkTime }} 检查</text>
 
+      <!-- ③b 你现在最该做的事（老板 2026-11-05 双版本令第四节第 1 条）：
+           放在 6 项检查之前，红灯优先，最多 3 条，大字亮色 -->
+      <view class="todo-card" :class="'todo-' + overallCls">
+        <text class="todo-h">你现在最该做的事</text>
+        <view v-if="todoItems.length" class="todo-list">
+          <view v-for="(t, i) in todoItems" :key="i" class="todo-item">
+            <text class="todo-num">{{ i + 1 }}</text>
+            <view class="todo-body">
+              <text class="todo-text">{{ t.text }}</text>
+              <text class="todo-from">来自：{{ t.from }}</text>
+            </view>
+          </view>
+        </view>
+        <text v-else class="todo-empty">{{ todoEmptyText }}</text>
+      </view>
+
       <!-- ④ 6 项检查：2 列网格，顺序固定 -->
       <text class="h2">6 项检查</text>
       <view class="dims">
@@ -54,10 +70,19 @@
         <text class="empty-t">{{ emptyFindingsText }}</text>
       </view>
 
-      <view v-for="(f, idx) in findings" :key="idx" class="card finding">
+      <!-- 绿灯发现默认收起（老板 2026-11-05 双版本令第四节第 2 条） -->
+      <view v-if="!redAmberFindings.length && greenFindings.length && !showGreenFindings" class="card green-fold" @tap="toggleGreen">
+        <text class="green-fold-t">另有 {{ greenFindings.length }} 项看起来正常</text>
+        <text class="green-fold-s">点开看看</text>
+      </view>
+      <view v-if="showGreenFindings && greenFindings.length" class="card green-fold green-fold-open" @tap="toggleGreen">
+        <text class="green-fold-t">收起「看起来正常」的项</text>
+      </view>
+
+      <view v-for="(f, idx) in visibleFindings" :key="idx" class="card finding" :class="{ 'finding-red': f.level === 'red' }">
         <view class="finding-head">
           <SignalLamp :level="f.level" size="sm" />
-          <text class="finding-title">{{ f.title }}</text>
+          <text class="finding-title" :class="{ 't1': f.level === 'red' }">{{ f.title }}</text>
           <text class="source-tag" :class="'src-' + f.source">{{ sourceLabel(f.source) }}</text>
         </view>
         <view class="quote" :class="'quote-' + f.level">
@@ -65,25 +90,35 @@
           <text class="quote-mark" :class="'mark-' + f.level">{{ f.evidence }}</text>
           <text class="quote-text">{{ contextAfter(f) }}」</text>
         </view>
-        <text class="reason">{{ f.reason }}</text>
+        <text class="reason t2">{{ f.reason }}</text>
       </view>
 
-      <!-- ⑥ 面试前问 HR -->
+      <!-- ⑥ 面试前问 HR：命中套路带出来的问题排最前并标注来源，固定追问折叠 -->
       <text class="h2">{{ questionTitle }}</text>
       <view class="card qlist">
-        <view v-for="(q, idx) in shownQuestions" :key="idx" class="q-item">
+        <view v-for="(q, idx) in hitQuestions" :key="'h' + idx" class="q-item">
           <view class="q-index"><text class="q-num">{{ idx + 1 }}</text></view>
-          <text class="q-text">{{ q }}</text>
+          <view class="q-body">
+            <text class="q-text t2">{{ q.text }}</text>
+            <text v-if="q.source" class="q-from">（对应：{{ q.source }}）</text>
+          </view>
+        </view>
+        <view v-for="(q, idx) in shownGreyQuestions" :key="'g' + idx" class="q-item">
+          <view class="q-index q-index-grey"><text class="q-num">{{ hitQuestions.length + idx + 1 }}</text></view>
+          <text class="q-text t2">{{ q.text }}</text>
+        </view>
+        <view v-if="hiddenQuestionCount && !showMoreQuestions" class="q-more" @tap="showMoreQuestions = true">
+          <text class="q-more-t">更多问题（还有 {{ hiddenQuestionCount }} 条）</text>
         </view>
         <view class="btn-copy" @tap="copyQuestions"><text>复制</text></view>
       </view>
 
-      <!-- ⑦ 自己也能核实 -->
-      <text class="h2">自己也能核实</text>
+      <!-- ⑦ 自己也能核实：固定条目合并成一张小卡，放报告靠后，用小字 -->
+      <text class="h2 t3">自己也能核实</text>
       <view class="card vlist">
         <view v-for="(v, idx) in report.how_to_verify" :key="idx" class="v-item">
           <view class="v-dot"></view>
-          <text class="v-text">{{ v }}</text>
+          <text class="v-text t3">{{ v }}</text>
         </view>
       </view>
 
@@ -223,6 +258,18 @@ const overall = computed(() => {
 });
 
 const verdictTitle = computed(() => VERDICT_TITLE[overall.value]);
+const overallCls = computed(() => overall.value);
+
+// 绿灯的发现默认收起，只显示「另有 N 项看起来正常」（同上第 2 条）
+const showGreenFindings = ref(false);
+const redAmberFindings = computed(() => findings.value.filter((f) => f.level !== 'green'));
+const greenFindings = computed(() => findings.value.filter((f) => f.level === 'green'));
+const visibleFindings = computed(() =>
+  showGreenFindings.value ? findings.value : redAmberFindings.value
+);
+function toggleGreen() {
+  showGreenFindings.value = !showGreenFindings.value;
+}
 
 // 顶部大横幅：只在「有整体套路判断」时显示。
 // 红灯整条红色、大口径写套路标题 +「建议别去」；黄灯黄色横幅。
@@ -409,15 +456,82 @@ function contextAfter(f) {
   return c.slice(i + String(f.evidence).length);
 }
 
-// 问题区：最多显示 5 条，标题数字随条数变
+// 问题区（老板 2026-11-05 双版本令第四节第 1 条）：
+//   - 命中套路带出来的问题排最前面，每条标注「对应：哪条发现」
+//   - 没提到维度的固定追问排后面，默认只显示 3 条，其余收进「更多问题」
+//   - 同意思的问题只出现一次
 const MAX_Q = 5;
-const allQuestions = computed(() => report.value.questions_to_ask || []);
-const shownQuestions = computed(() => allQuestions.value.slice(0, MAX_Q));
+const MAX_HIT_Q = 3;
+const MAX_GREY_Q = 3;
+const showMoreQuestions = ref(false);
+
+// 一条问题对应哪个发现：本地报告 findings 带 ask/action 字段时直接对上，
+// 老报告（服务器路径）没有对不上的就按序号兜底给最前面的命中。
+const questionItems = computed(() => {
+  const raw = report.value.questions_to_ask || [];
+  const hits = findings.value;
+  // 命中发现自带的问题（rules 引擎会给每条发现带 ask）
+  const hitQs = [];
+  hits.forEach((f) => {
+    const q = f.ask || f.action || '';
+    if (q && hitQs.indexOf(q) < 0) hitQs.push(q);
+  });
+  // 报告里给的问题：能对上命中问题的排前面并带标注
+  const items = [];
+  const used = new Set();
+  raw.forEach((q) => {
+    if (!q || used.has(q)) return;
+    used.add(q);
+    const owner = hits.find((f) => (f.ask || f.action || '') === q);
+    items.push({
+      text: q,
+      source: owner ? owner.title : '',
+      kind: owner ? 'hit' : 'grey',
+      level: owner ? owner.level : '',
+    });
+  });
+  // 命中发现的问题如果没出现在报告问题里，也补进来（排在命中组）
+  hitQs.forEach((q) => {
+    if (used.has(q)) return;
+    used.add(q);
+    const owner = hits.find((f) => (f.ask || f.action || '') === q);
+    items.push({ text: q, source: owner ? owner.title : '', kind: 'hit', level: owner ? owner.level : '' });
+  });
+  return items;
+});
+
+const hitQuestions = computed(() => questionItems.value.filter((i) => i.kind === 'hit').slice(0, MAX_HIT_Q));
+const greyQuestions = computed(() => questionItems.value.filter((i) => i.kind === 'grey'));
+const shownGreyQuestions = computed(() =>
+  showMoreQuestions.value ? greyQuestions.value : greyQuestions.value.slice(0, MAX_GREY_Q)
+);
+const hiddenQuestionCount = computed(() =>
+  Math.max(0, greyQuestions.value.length - MAX_GREY_Q)
+);
+const allQuestions = computed(() => questionItems.value.map((i) => i.text));
 const questionTitle = computed(() => {
   const n = allQuestions.value.length;
   if (!n) return '面试前，先问 HR 这几个问题';
   return '面试前，先问 HR 这 ' + Math.min(n, MAX_Q) + ' 个问题';
 });
+
+// 「你现在最该做的事」卡片（老板 2026-11-05 双版本令第四节第 1 条）：
+// 内容取自这次命中的套路和规则的 how，红灯优先，最多 3 条，大字亮色。
+// 没有命中时只写一句话，不硬凑。
+const TODO_MAX = 3;
+const todoItems = computed(() => {
+  const reds = findings.value.filter((f) => f.level === 'red');
+  const ambers = findings.value.filter((f) => f.level === 'amber');
+  const pool = reds.concat(ambers);
+  const out = [];
+  pool.forEach((f) => {
+    const t = f.action || f.reason || '';
+    if (!t || out.some((o) => o.text === t)) return;
+    out.push({ text: t, level: f.level, from: f.title });
+  });
+  return out.slice(0, TODO_MAX);
+});
+const todoEmptyText = '暂时没发现明显问题，面试时留意下面几个问题';
 
 function copyQuestions() {
   const text = allQuestions.value.join('\n');
@@ -673,6 +787,135 @@ function onShare() {
 .basis {
   margin-top: 23rpx;
   font-size: 23rpx;
+  color: $ink-2;
+}
+
+// ---- 信息分级（老板 2026-11-05 双版本令第四节第 2 条）----
+// 一级：结论标题、「你现在最该做的事」、红灯发现标题 → 大字、粗体、$ink
+// 二级：发现原话和解释、要问的问题 → 15px（29rpx）、$ink-3
+// 三级：来源标签、免责声明、核实说明、日期、版本号 → 12–13px（23–25rpx）、$ink-2
+// 全部只用 uni.scss 里已有的变量，不新增颜色。
+.t1 {
+  color: $ink;
+  font-weight: 800;
+}
+.t2 {
+  font-size: 29rpx;
+  color: $ink-3;
+}
+.t3 {
+  font-size: 23rpx;
+  color: $ink-2;
+}
+
+// 「你现在最该做的事」卡片：放在 6 项检查前，红灯优先，最多 3 条
+.todo-card {
+  margin-top: 38rpx;
+  padding: 34rpx 31rpx;
+  border-radius: $radius-lg;
+  border: 2rpx solid $off;
+  background: $surface-2;
+}
+.todo-red {
+  border-color: $red;
+  background: $red-soft;
+}
+.todo-amber {
+  border-color: $amber;
+  background: $amber-soft;
+}
+.todo-h {
+  display: block;
+  font-size: 41rpx;
+  font-weight: 900;
+  color: $ink;
+  margin-bottom: 23rpx;
+}
+.todo-list {
+  display: block;
+}
+.todo-item {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  margin-bottom: 25rpx;
+}
+.todo-num {
+  width: 40rpx;
+  height: 40rpx;
+  line-height: 40rpx;
+  border-radius: 20rpx;
+  text-align: center;
+  font-size: 23rpx;
+  font-weight: 800;
+  color: $cta-ink;
+  background: $amber;
+  margin-right: 19rpx;
+}
+.todo-red .todo-num {
+  background: $red;
+  color: $ink;
+}
+.todo-body {
+  flex: 1;
+}
+.todo-text {
+  display: block;
+  font-size: 37rpx;
+  font-weight: 800;
+  line-height: 1.5;
+  color: $ink;
+}
+.todo-from {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 23rpx;
+  color: $ink-2;
+}
+.todo-empty {
+  display: block;
+  font-size: 33rpx;
+  font-weight: 700;
+  line-height: 1.6;
+  color: $ink-3;
+}
+
+// 红灯发现：标题一级 + 红色边框
+.finding-red {
+  border: 2rpx solid $red;
+}
+.green-fold {
+  padding: 27rpx 31rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.green-fold-t {
+  font-size: 27rpx;
+  color: $ink-3;
+}
+.green-fold-s {
+  font-size: 23rpx;
+  color: $ink-2;
+}
+.q-body {
+  flex: 1;
+}
+.q-from {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 23rpx;
+  color: $ink-2;
+}
+.q-index-grey {
+  background: $off;
+}
+.q-more {
+  padding: 23rpx 0 8rpx 0;
+}
+.q-more-t {
+  font-size: 25rpx;
   color: $ink-2;
 }
 
