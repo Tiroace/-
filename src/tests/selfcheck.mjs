@@ -222,9 +222,15 @@ await test('B5 广告拉不出来 → 守卫返回 granted+fallback，业务照�
 // ============ C. 合规工具 ============
 await test('C1 免责声明 = D20 定稿（带后半句，无 AI 字样）', async () => {
   const { DISCLAIMER_TEXT } = await import('../src/common/constants.js');
-  assert.equal(
-    DISCLAIMER_TEXT,
-    '本报告由系统根据截图文字和规则库自动生成，仅供参考，不构成法律意见，也不代表对任何企业的评价；截图不完整或内容不实都会影响判断，重要事项请自行核实。'
+  // 双版本令第二节第 5 条：两版免责声明各一句——
+  // 识图版「根据截图文字」，规则版「根据你提供的文字」。必须整句一字不差命中其一。
+  const D20_DEEPSEEK =
+    '本报告由系统根据截图文字和规则库自动生成，仅供参考，不构成法律意见，也不代表对任何企业的评价；截图不完整或内容不实都会影响判断，重要事项请自行核实。';
+  const D20_RULES =
+    '本报告由系统根据你提供的文字和规则库自动生成，仅供参考，不构成法律意见，也不代表对任何企业的评价；内容不完整或不实都会影响判断，重要事项请自行核实。';
+  assert.ok(
+    DISCLAIMER_TEXT === D20_DEEPSEEK || DISCLAIMER_TEXT === D20_RULES,
+    '免责声明不是两版定稿之一：' + DISCLAIMER_TEXT
   );
   // 路线令：产品文案不得出现 AI
   assert.equal(/(?<![A-Za-z])AI(?![A-Za-z])/.test(DISCLAIMER_TEXT), false, '免责声明仍含 AI 字样');

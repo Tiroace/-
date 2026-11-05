@@ -116,7 +116,7 @@ import { fetchReports } from '@/services/api.js';
 import { APP_NAME, APP_VERSION } from '@/common/brand.js';
 import { isMembershipVisible } from '@/common/entitlement.js';
 import { isUnlimitedEnv } from '@/common/env.js';
-import { USE_DEEPSEEK } from '@/common/config.js';
+import { VISION_ENGINE } from '@/common/config.js';
 import { listHistory, getHistory } from '@/services/history.js';
 import { detectPlatform, PLATFORM_LABELS } from '@/platform/detect.js';
 
@@ -199,7 +199,7 @@ function loadLocal() {
 }
 
 function load() {
-  if (!USE_DEEPSEEK) {
+  if (!VISION_ENGINE) {
     loadLocal();
     return;
   }
@@ -219,7 +219,7 @@ function load() {
 
 onMounted(load);
 onShow(() => {
-  if (!USE_DEEPSEEK) {
+  if (!VISION_ENGINE) {
     loadLocal();
     return;
   }

@@ -65,11 +65,11 @@ defineOptions({ name: 'QuotaSheet' });
 
 // 规则版（提审用）没有广告位：微信流量主还没开通（要 1000 个独立访客），
 // 「看广告换 1 次」按钮不能出现（双版本令第二节第 2 条）。默认值为 0 即不渲染该选项。
-import { USE_DEEPSEEK } from '@/common/config.js';
+import { VISION_ENGINE } from '@/common/config.js';
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
-  remainingAd: { type: Number, default: USE_DEEPSEEK ? 5 : 0 },
+  remainingAd: { type: Number, default: VISION_ENGINE ? 5 : 0 },
   adCap: { type: Number, default: 5 },
   memberAvailable: { type: Boolean, default: false },
   weeklyPrice: { type: String, default: '' },

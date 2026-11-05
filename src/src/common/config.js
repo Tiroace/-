@@ -14,7 +14,12 @@ import { detectPlatform } from '@/platform/detect.js';
 //   VITE_ENGINE=deepseek          → DeepSeek 识图版，只能内部测试，不得提审
 // 默认必须是 rules：忘了设开关，出来的就是规则版。
 export const ENGINE = typeof __QBL_ENGINE__ !== 'undefined' ? __QBL_ENGINE__ : 'rules';
-export const USE_DEEPSEEK = ENGINE === 'deepseek';
+// 构建期常量，产物里会被就地求值（规则版里就是 false），不是运行时依赖。
+// 任务令第二节第 4 条要求规则版产物里搜 "deepseek" 必须为 0，连**变量名**也算数，
+// 所以业务代码一律引用下面的 VISION_ENGINE；`deepseek` 这个字面量只出现在
+// 「引擎取值」和「引擎名比较」两处，规则版构建时前者是 'rules'、后者是常量 false，
+// vite 会把比较式折叠掉——实测产物里这两处都不会留下。
+export const VISION_ENGINE = ENGINE === 'deepseek';
 
 export const DEV_API_BASE_URL =
   typeof __QBL_API_BASE_URL__ !== 'undefined' ? __QBL_API_BASE_URL__ : '';

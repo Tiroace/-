@@ -8,11 +8,11 @@
 // - 「查过的工作」「亮过的红灯」两个数也从这里算。
 //
 // 全部用 uni.getStorageSync / setStorageSync，不依赖网络。
-import { USE_DEEPSEEK } from '@/common/config.js';
+import { VISION_ENGINE } from '@/common/config.js';
 
 const KEY = 'qbl_history_v1';
 const KEEP_DAYS = 7;
-export const KEEP_MAX = USE_DEEPSEEK ? 50 : 20;
+export const KEEP_MAX = VISION_ENGINE ? 50 : 20;
 
 function nowMs() {
   return Date.now();

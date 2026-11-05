@@ -5,11 +5,46 @@
 
     <view class="main">
       <text class="hero-title">去面试之前，{{ '\n' }}先让我看一眼</text>
-      <text class="hero-sub">招聘截图发过来，30 秒告诉你这份工作有没有坑。</text>
+      <text class="hero-sub">{{ VISION_ENGINE ? '招聘截图发过来，30 秒告诉你这份工作有没有坑。' : '把招聘信息粘贴过来，马上告诉你这份工作有没有坑。' }}</text>
 
-      <!-- 上传卡（老板 2026-11-05 双版本令第四节第 3 条）：
+      <!-- 规则版（提审用）：粘贴卡（双版本令第二节第 2 条）。
+           全部在手机上跑，不做手机认字，所以主操作是「粘贴文字」而不是上传截图。 -->
+      <view v-if="!VISION_ENGINE" class="card upload upload-card paste-card">
+        <textarea
+          v-model="pasteText"
+          class="paste-input"
+          :maxlength="PASTE_MAX"
+          placeholder="把招聘信息或和 HR 的聊天，整段粘贴到这里"
+          placeholder-class="paste-ph"
+          :show-confirm-bar="false"
+          :adjust-position="true"
+          disable-default-padding
+        />
+        <view class="paste-bar">
+          <view class="paste-btn" @tap="onPasteClipboard">
+            <text>一键粘贴</text>
+          </view>
+          <text class="paste-count t3" :class="{ 'paste-count-over': pasteOver }">{{ pasteText.length }}/{{ PASTE_MAX }}</text>
+          <view v-if="pasteText" class="paste-clear" @tap="clearPaste">
+            <text>清空</text>
+          </view>
+        </view>
+        <text v-if="pasteOver" class="paste-tip">最多 3000 字，已截断</text>
+
+        <view class="btn-primary" :class="{ 'btn-primary-disabled': !pasteText.trim(), 'btn-busy': submitting }" @tap="onPickOrStart">
+          <text>{{ buttonText }}</text>
+        </view>
+
+        <view class="up-meta">
+          <text v-if="isUnlimited">内测期间不限次数</text>
+          <text v-else>还能免费查 <text class="up-meta-num">{{ balance }}</text> 次</text>
+          <text>岗位介绍和 HR 聊天一起贴，查得更准</text>
+        </view>
+      </view>
+
+      <!-- 上传卡（老板 2026-11-05 双版本令第四节第 3 条）：DeepSeek 版首页。
            整张卡都能点，虚线框；中间是上传图标 + 文案；选好图后显示缩略图（右上角可删） -->
-      <view class="card upload upload-card" :class="{ 'upload-card-has': images.length }" @tap="onPickCard">
+      <view v-else class="card upload upload-card" :class="{ 'upload-card-has': images.length }" @tap="onPickCard">
         <!-- 已选截图缩略图（可删除） -->
         <view v-if="images.length" class="thumbs">
           <view v-for="(img, idx) in images" :key="img.path" class="thumb">
@@ -60,7 +95,7 @@
           <view class="ico-eye"></view>
         </view>
         <view class="grow">
-          <text class="demo-t">没有截图？先看一份示例报告</text>
+          <text class="demo-t">没有内容？先看一份示例报告</text>
           <text class="demo-s">看看检查结果长什么样，不扣次数</text>
         </view>
         <view class="chev"></view>
@@ -103,7 +138,7 @@
 
       <!-- 服务说明入口（派书 §3 首页必须有；设计稿没画，做成低调一行，不抢主视觉） -->
       <view class="ai-notice-row" @tap="gotoAiDoc">
-        <text class="ai-notice-text">本服务根据截图文字和规则库自动检查，查看检查规则说明</text>
+        <text class="ai-notice-text">{{ VISION_ENGINE ? '本服务根据截图文字和规则库自动检查，查看检查规则说明' : '本服务根据你提供的文字和规则库自动检查，查看检查规则说明' }}</text>
         <view class="ai-notice-chev"></view>
       </view>
 
@@ -136,14 +171,14 @@ import QuotaSheet from '@/components/QuotaSheet.vue';
 import { ensureLogin, getUser, refreshUser } from '@/services/session.js';
 import { createAnalysis, uploadImage, claimAdReward, newRequestId, ApiError } from '@/services/api.js';
 // 改造令 §〇：截图直发 DeepSeek 识图（失败静默退回上面的服务器流程）
-// 双版本令第三节：规则版不得包含 DeepSeek 相关代码。
-// 做法是在 vite.config.js 里把整个 judge.js 换成空实现（引擎为 rules 时），
-// 规则版包里因此不会出现提示词、接口地址和模型名；构建后另有脚本逐词扫产物兜底。
+// 双版本令第三节：规则版不得包含 DeepSeek 相关代码。做法是在 vite.config.js 里把整个
+// judge.js 换成空实现（引擎为 rules 时），规则版包里因此不会出现提示词、接口地址和模型名；
+// 构建后另有脚本逐词扫产物兜底。
 import { isVisionJudgeAvailable, toBase64, judgeImages, validateHits } from '@/services/judge.js';
 import { buildLocalReport } from '@/services/localReport.js';
 import { buildRuleReport } from '@/services/rules.js';
-import { recognizeImages } from '@/platform/ocr.js';
-import { DEEPSEEK_MAX_IMAGES, MIN_OCR_CHARS, QUOTA_RULES, USE_DEEPSEEK } from '@/common/config.js';
+// 规则版不做手机认字（双版本令修订），ocr.js 这一版不接进首页。
+import { DEEPSEEK_MAX_IMAGES, MIN_OCR_CHARS, QUOTA_RULES, VISION_ENGINE } from '@/common/config.js';
 import { runRewardedFlow, canTriggerAd } from '@/common/adGuard.js';
 import { canBuyMember, isMembershipVisible } from '@/common/entitlement.js';
 import { getAdUnitId } from '@/common/config.js';
@@ -162,10 +197,14 @@ defineOptions({
 });
 
 const images = ref([]);
+// 规则版：粘贴的招聘文字（双版本令第二节第 2 条）。最多 3000 字，超出截断并提示。
+const PASTE_MAX = 3000;
+const pasteText = ref('');
+const pasteOver = ref(false);
 const submitting = ref(false);
 const balance = ref(0);
 // 规则版没有广告位（流量主未开通）：初始 0，次数用完弹窗里就不出现「看广告换 1 次」
-const adRemaining = ref(USE_DEEPSEEK ? 5 : 0);
+const adRemaining = ref(VISION_ENGINE ? 5 : 0);
 const adCap = ref(5);
 const adLoading = ref(false);
 const showQuota = ref(false);
@@ -183,7 +222,9 @@ const patterns = ref([
 ]);
 
 const buttonText = computed(() => {
-  if (submitting.value) return '正在提交…';
+  if (submitting.value) return '正在检查…';
+  // 规则版（粘贴文字）：没内容时写「粘贴文字，开始检查」，有内容时写「开始检查」
+  if (!VISION_ENGINE) return pasteText.value.trim() ? '开始检查' : '粘贴文字，开始检查';
   if (images.value.length) return '开始检查（' + images.value.length + ' 张）';
   return '选截图，开始检查';
 });
@@ -198,7 +239,7 @@ function syncUser(user) {
   // 本地识图路径可用时，次数以本地为准：否则会出现「显示 3 次、实际已用掉」的矛盾
   if (isVisionJudgeAvailable()) balance.value = localFreeLeft();
   // 规则版：没有服务器，次数一律取本地
-  if (!USE_DEEPSEEK) balance.value = localFreeLeft();
+  if (!VISION_ENGINE) balance.value = localFreeLeft();
   // 开发版/体验版不限次数：模板用 isUnlimited 显示「内测期间不限次数」，
   // 这里给一个足够大的数，避免后续任何 <= 0 的判断误拦
   if (isUnlimitedEnv()) balance.value = 999999;
@@ -207,14 +248,14 @@ function syncUser(user) {
 // 纯本地路径下不能显示「还能免费查 0 次」就拦住检查，次数由本地控制
 // 规则版全本地；DeepSeek 版有密钥时也走全本地
 function localPathActive() {
-  if (!USE_DEEPSEEK) return true;
+  if (!VISION_ENGINE) return true;
   return isVisionJudgeAvailable();
 }
 
 // 规则版（提审用）不与任何服务器通信：不登录、不拉用户信息、不上报。
 // 双版本令第二节第 2 条：规则版「不调服务器、不调云托管、不调云 OCR、不调 DeepSeek」。
 onMounted(() => {
-  if (!USE_DEEPSEEK) {
+  if (!VISION_ENGINE) {
     // 纯本地：次数直接取本地，不发起任何请求
     balance.value = isUnlimitedEnv() ? 999999 : localFreeLeft();
     return;
@@ -229,7 +270,7 @@ onMounted(() => {
 });
 
 onShow(() => {
-  if (!USE_DEEPSEEK) {
+  if (!VISION_ENGINE) {
     balance.value = isUnlimitedEnv() ? 999999 : localFreeLeft();
     return;
   }
@@ -243,9 +284,56 @@ function onPickCard() {
   if (images.value.length < 3) chooseImages();
 }
 
-// 主按钮：没选图先选图，选了图就开始检查
+// 一键粘贴：**用户点了按钮才读剪贴板**，绝不进页面就读（双版本令第二节第 2 条）。
+// 剪贴板用途已写进隐私政策与后台「用户隐私保护指引」说明。
+function onPasteClipboard() {
+  uni.getClipboardData({
+    success: (res) => {
+      const data = String((res && res.data) || '');
+      if (!data) {
+        uni.showToast({ title: '剪贴板是空的，先把招聘文字复制下来', icon: 'none' });
+        return;
+      }
+      setPasteText(data);
+    },
+    fail: () => {
+      uni.showToast({ title: '没读到剪贴板，请手动粘贴', icon: 'none' });
+    },
+  });
+}
+
+function setPasteText(raw) {
+  const s = String(raw || '');
+  if (s.length > PASTE_MAX) {
+    pasteText.value = s.slice(0, PASTE_MAX);
+    pasteOver.value = true;
+    uni.showToast({ title: '最多 3000 字，已截断', icon: 'none' });
+    return;
+  }
+  pasteText.value = s;
+  pasteOver.value = false;
+}
+
+function clearPaste() {
+  pasteText.value = '';
+  pasteOver.value = false;
+}
+
+// 主按钮：
+//   规则版 —— 没内容不响应（按钮是灰的）；有内容先查次数，再检查
+//   DeepSeek 版 —— 没选图先选图，选了图就开始检查
 function onPickOrStart() {
   if (submitting.value) return;
+  if (!VISION_ENGINE) {
+    if (!pasteText.value.trim()) return; // 没内容时按钮灰着，不弹窗打扰
+    // 次数为 0 时点按钮，弹「次数用完」（双版本令第二节第 2 条）
+    if (!isUnlimitedEnv() && localFreeLeft() <= 0) {
+      showQuota.value = true;
+      return;
+    }
+    startAnalysis();
+    return;
+  }
   if (!images.value.length) {
     chooseImages();
     return;
@@ -282,38 +370,34 @@ function removeImage(idx) {
 function startAnalysis() {
   submitting.value = true;
   // 规则版（提审用）：全手机本地，不碰服务器。DeepSeek 版沿用原流程。
-  if (!USE_DEEPSEEK) {
+  if (!VISION_ENGINE) {
     runRulePath();
     return;
   }
   runLocalThenFallback();
 }
 
-// 规则版主流程（双版本令第二节）：
-//   手机认字 → 关键词规则 + 套路匹配 → 拼报告 → 报告页
-// 任何一步失败都不退回服务器（规则版没有服务器），按「没认出文字」提示，且不扣次数。
+// 规则版主流程（双版本令第二节，修订后不做手机认字）：
+//   粘贴文字 → 文本规整 → 关键词规则 + 套路匹配 → 拼报告 → 报告页
+// 全程在手机上，不发任何请求。不是招聘内容时不扣次数。
 async function runRulePath() {
-  const paths = images.value.map((i) => i.path);
+  const text = String(pasteText.value || '');
   try {
-    const ocr = await recognizeImages(paths);
-    if (!ocr.ok) {
-      submitting.value = false;
-      // 手机不支持 VisionKit 或认出的字太少：不扣次数，不退回服务器
+    const t0 = Date.now();
+    const { report, meta } = buildRuleReport(text, { minChars: MIN_OCR_CHARS });
+    meta.elapsed_ms = Date.now() - t0;
+    submitting.value = false;
+    if (!report.is_job_posting) {
+      // 不是招聘内容：提示但不扣次数（双版本令第二节第 1 条原文）
       uni.showToast({
-        title: '没认出文字，换一张清楚的截图，或把微信升级到最新版',
+        title: '没看出是招聘信息，把岗位介绍或和 HR 的聊天整段粘贴进来',
         icon: 'none',
         duration: 3000,
       });
       return;
     }
-    const { report, meta } = buildRuleReport(ocr.text, { minChars: MIN_OCR_CHARS });
-    submitting.value = false;
-    // 真机验收要报「认出来的文字和耗时」，所以把认字耗时与字数带进 meta，
-    // 报告页的「本机判断」标签能核对（不改报告 JSON 结构）。
-    meta.ocr_ms = ocr.ms;
-    meta.ocr_failed = ocr.failedCount;
-    // 扣次数：只扣真正的招聘检查；不是招聘截图不扣
-    if (report.is_job_posting) setLocalFreeLeft(localFreeLeft() - 1);
+    // 扣次数：只扣真正的招聘检查
+    setLocalFreeLeft(localFreeLeft() - 1);
     saveHistory(report, {
       schemeTitle: (meta.scheme && meta.scheme.title) || '',
       schemeId: meta.scheme_id || '',
@@ -496,7 +580,7 @@ function openSampleReport() {
 // 看广告换次数：用户点了按钮才创建广告（§6.2）
 // 规则版没有广告位（流量主未开通），按钮不渲染，这里也直接返回，不发任何请求。
 function onWatchAd() {
-  if (!USE_DEEPSEEK) return;
+  if (!VISION_ENGINE) return;
   if (adLoading.value) return;
   if (!canTriggerAd('index')) {
     uni.showToast({ title: '操作太频繁了，请稍后再试', icon: 'none' });
@@ -610,6 +694,62 @@ function gotoAiDoc() {
   margin-top: 8rpx;
   font-size: 21rpx;
   color: $ink-2;
+}
+
+// 粘贴卡（规则版首页，双版本令第二节第 2 条）：样式与上传卡保持一致
+.paste-card {
+  border: 3rpx dashed $off;
+}
+.paste-input {
+  width: 100%;
+  min-height: 260rpx;
+  font-size: 29rpx;
+  line-height: 1.6;
+  color: $ink;
+  background: $surface-2;
+  border-radius: $radius-sm;
+  padding: 23rpx;
+  box-sizing: border-box;
+}
+.paste-ph {
+  color: $ink-2;
+  font-size: 29rpx;
+}
+.paste-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 19rpx;
+}
+.paste-btn {
+  padding: 13rpx 27rpx;
+  border-radius: $radius-tag;
+  border: 2rpx solid $off;
+  font-size: 25rpx;
+  color: $ink-3;
+}
+.paste-count {
+  flex: 1;
+  text-align: right;
+}
+.paste-count-over {
+  color: $amber-text;
+}
+.paste-clear {
+  margin-left: 23rpx;
+  padding: 13rpx 19rpx;
+  font-size: 25rpx;
+  color: $ink-2;
+}
+.paste-tip {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 23rpx;
+  color: $amber-text;
+}
+// 主按钮灰掉态：没内容时不可点，视觉上要能一眼看出
+.btn-primary-disabled {
+  opacity: 0.45;
 }
 
 // 插画区：设计稿 128 高 → 246rpx
