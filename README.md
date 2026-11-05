@@ -48,7 +48,19 @@ $py = "C:\Users\Administrator\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies
 # 前端（正式包必须用这个命令，内置 dev 页清理与 15 项构建后检查）
 cd src
 node <pnpm.mjs> run build:mp-weixin
+
+# 双版本构建（双版本令第三节：一套代码出两个包）
+node <pnpm.mjs> run build:rules          # 规则版 1.0.7（默认，提审用这一版）
+node <pnpm.mjs> run build:rules:review   # 规则版提审包（额外去掉广场 tab）
+node <pnpm.mjs> run build:deepseek       # 识图版（需 VITE_DEEPSEEK_KEY，只能内部测试，不得提审）
 ```
+
+**引擎开关说明**
+
+- 开关是 `VITE_ENGINE`，**不设就是规则版**（`rules`）。规则版：用户粘贴招聘文字，全部在手机上检查，不发任何请求。
+- 规则版构建时如果 `VITE_DEEPSEEK_KEY` 有值，`vite.config.js` 会直接报错退出。
+- 每次出规则版都要跑产物自检（`build:rules` 已自动带上）：产物里 `deepseek` / `api.deepseek.com` / `sk-` / `深度求索` 四个词必须全为 0，且首页与「我的」页不得出现联网调用。
+- 单独复跑：`node <pnpm.mjs> run check:rules:build`；规则引擎自检：`node <pnpm.mjs> run check:rules`。
 
 小程序在微信开发者工具打开 `src/dist/build/mp-weixin`，固定端口 9420；一键脚本 `src/scripts/open_wechat_ide.ps1`。
 
