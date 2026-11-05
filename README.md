@@ -58,7 +58,8 @@ node <pnpm.mjs> run build:deepseek       # 识图版（需 VITE_DEEPSEEK_KEY，�
 **引擎开关说明**
 
 - 开关是 `VITE_ENGINE`，**不设就是规则版**（`rules`）。规则版：用户粘贴招聘文字，全部在手机上检查，不发任何请求。
-- 规则版构建时如果 `VITE_DEEPSEEK_KEY` 有值，`vite.config.js` 会直接报错退出。
+- 规则版构建时如果 `VITE_DEEPSEEK_KEY` 有值：`build-engine.mjs` **会先主动清掉该环境变量再构建**（产物里因此不含密钥）。
+  另有第二道防线：若绕过 `build-engine` 直接调 vite 构建规则版，`vite.config.js` 会直接报错退出。
 - 每次出规则版都要跑产物自检（`build:rules` 已自动带上）：产物里 `deepseek` / `api.deepseek.com` / `sk-` / `深度求索` 四个词必须全为 0，且首页与「我的」页不得出现联网调用。
 - 单独复跑：`node <pnpm.mjs> run check:rules:build`；规则引擎自检：`node <pnpm.mjs> run check:rules`。
 
