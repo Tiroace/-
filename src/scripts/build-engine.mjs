@@ -35,12 +35,21 @@ console.log(
 // npm.cmd 在 Windows 下 spawnSync 拿不到 stdio，出错时只会看到空白，排查成本很高。
 const UNI_JS = 'node_modules/@dcloudio/vite-plugin-uni/bin/uni.js';
 // 提审包要额外给 strip-dev-build / postbuild-check 传 review，否则广场 tab 会一起出去。
+// 注意：非提审包也必须跑 strip-dev-build（不带 review），它负责删掉「开发自测」页等 dev 产物；
+// 漏了这一步，开发者工具上传会报 ENOENT pages/dev/index.wxss（踩过一次）。
 const extra = IS_REVIEW ? ['review'] : [];
+// 规则版：清掉「上传卡」组件产物（规则版只有粘贴卡）。必须在 postbuild-check 之前跑，
+// 让它能对清理后的产物做最后的词表核对。
+const stripUpload =
+  engine === 'rules'
+    ? [[process.execPath, ['scripts/strip-upload-card.mjs', 'dist/build/mp-weixin']]]
+    : [];
 const steps = [
   [process.execPath, [UNI_JS, 'build', '-p', 'mp-weixin']],
   [process.execPath, ['scripts/strip-dev-build.mjs', 'dist/build/mp-weixin'].concat(extra)],
-  [process.execPath, ['scripts/postbuild-check.mjs', 'dist/build/mp-weixin'].concat(extra)],
-];
+]
+  .concat(stripUpload)
+  .concat([[process.execPath, ['scripts/postbuild-check.mjs', 'dist/build/mp-weixin'].concat(extra)]]);
 for (const [cmd, args] of steps) {
   // eslint-disable-next-line no-await-in-loop
   const r = spawnSync(cmd, args, { stdio: 'inherit', env, shell: false });

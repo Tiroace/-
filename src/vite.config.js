@@ -58,6 +58,8 @@ export default defineConfig(({ command, mode }) => {
     plugins: [uni({ pagesJsonPath: resolvePagesJson() })],
     // 规则版把 judge.js 换成本地空实现：包体里不留提示词、接口地址和模型名。
     // 只换这一个文件，业务代码不用改；DeepSeek 版照旧用真文件。
+    // 注意：这条 alias 只对 .js 有效；.vue 组件不走 vite alias（uni 先解析组件），
+    // 上传卡的排除改为构建后清理，见 scripts/check-rules-build.mjs 与 build-engine.mjs。
     resolve: {
       alias:
         engine === 'rules'

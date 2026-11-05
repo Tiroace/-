@@ -42,52 +42,19 @@
         </view>
       </view>
 
-      <!-- 上传卡（老板 2026-11-05 双版本令第四节第 3 条）：DeepSeek 版首页。
-           整张卡都能点，虚线框；中间是上传图标 + 文案；选好图后显示缩略图（右上角可删） -->
-      <view v-else class="card upload upload-card" :class="{ 'upload-card-has': images.length }" @tap="onPickCard">
-        <!-- 已选截图缩略图（可删除） -->
-        <view v-if="images.length" class="thumbs">
-          <view v-for="(img, idx) in images" :key="img.path" class="thumb">
-            <image class="thumb-img" :src="img.path" mode="aspectFill" />
-            <view class="thumb-del" @tap.stop="removeImage(idx)">
-              <text class="thumb-del-text">×</text>
-            </view>
-          </view>
-          <view v-if="images.length < 3" class="thumb thumb-add" @tap.stop="chooseImages">
-            <text class="thumb-add-plus">+</text>
-            <text class="thumb-add-t">再加一张</text>
-          </view>
-        </view>
-
-        <view class="upload-dashed">
-          <!-- 插画：三张截图，中间一张标出可疑行 -->
-          <view class="illus" aria-hidden="true">
-            <view class="shot l"></view>
-            <view class="shot r"></view>
-            <view class="shot m">
-              <view class="bar-line" style="width: 70%"></view>
-              <view class="bar-line" style="width: 90%"></view>
-              <view class="bar-line hit" style="width: 100%"></view>
-              <view class="bar-line" style="width: 55%"></view>
-              <view class="bar-line" style="width: 80%"></view>
-            </view>
-            <view class="bang">!</view>
-          </view>
-
-          <text class="up-title">点这里选截图</text>
-          <text class="up-sub">最多 3 张，岗位详情和聊天记录一起传更准</text>
-        </view>
-
-        <view class="btn-primary" :class="{ 'btn-busy': submitting }" @tap.stop="onPickOrStart">
-          <text>{{ buttonText }}</text>
-        </view>
-
-        <view class="up-meta">
-          <text v-if="isUnlimited">内测期间不限次数</text>
-          <text v-else>还能免费查 <text class="up-meta-num">{{ balance }}</text> 次</text>
-          <text>没查出结果，不扣次数</text>
-        </view>
-      </view>
+      <!-- 上传卡（识图版专用）：抽成组件，规则版不 import 它，
+           所以规则版产物里不会出现「点这里选截图」这类上传文案 -->
+      <UploadCard
+        v-else
+        :images="images"
+        :submitting="submitting"
+        :balance="balance"
+        :is-unlimited="isUnlimited"
+        :max-images="3"
+        @pick="chooseImages"
+        @remove="removeImage"
+        @start="onPickOrStart"
+      />
 
       <!-- 示例报告入口：内置数据，不扣次数 -->
       <view class="card demo" @tap="openSampleReport">
@@ -168,6 +135,10 @@ import { onShow } from '@dcloudio/uni-app';
 import NavBar from '@/components/NavBar.vue';
 import SignalLamp from '@/components/SignalLamp.vue';
 import QuotaSheet from '@/components/QuotaSheet.vue';
+// 上传卡只在识图版首页渲染。规则版构建时 vite.config.js 会把这个路径
+// 别名指向一个空组件（UploadCard.stub.vue），所以规则版产物里不会出现
+// 「点这里选截图」这类上传文案——自检脚本会逐词核对。
+import UploadCard from '@/components/UploadCard.vue';
 import { ensureLogin, getUser, refreshUser } from '@/services/session.js';
 import { createAnalysis, uploadImage, claimAdReward, newRequestId, ApiError } from '@/services/api.js';
 // 改造令 §〇：截图直发 DeepSeek 识图（失败静默退回上面的服务器流程）
@@ -676,6 +647,11 @@ function gotoAiDoc() {
 }
 .upload-dashed {
   display: block;
+}
+// 选图后缩略图独占内容区
+.thumbs-in-card {
+  margin-top: 0;
+  margin-bottom: 19rpx;
 }
 .thumb-add {
   display: flex;

@@ -18,6 +18,9 @@ const WORDS = ['deepseek', 'api.deepseek.com', 'sk-', '深度求索'];
 // 规则版页面里不该出现的联网调用（变量名会被压缩，所以查的是字符串字面量和方法名）
 const NET_CALLS = ['ensureLogin', 'refreshUser', 'createAnalysis', 'fetchReports', 'claimAdReward', 'reportStats', 'callContainer'];
 const NET_PAGES = ['pages/index/index.js', 'pages/mine/index.js'];
+// 规则版界面上不得出现的截图类文案（双版本令第二节第 2 条：规则版界面不出现「上传截图」）。
+// 规则版首页是粘贴卡；上传卡只属于识图版。这些词若出现在规则版包内，说明上传卡被带进去了。
+const SCREENSHOT_WORDS = ['点这里选截图', '最多 3 张', '选截图，开始检查', '再加一张'];
 
 // sk- 只算「像密钥」的：sk- 后面跟一长串字母数字。文档/普通文案里的 sk- 不算，但要单独列出来供人工确认。
 const SECRET_LIKE = /sk-[A-Za-z0-9_-]{16,}/;
@@ -117,6 +120,33 @@ function main() {
     return 1;
   }
   console.log('[OK] 规则版入口页面无联网调用');
+
+  // 规则版界面不该出现截图上传（第二节第 2 条）。上传卡已抽成 components/UploadCard.vue，
+  // 规则版不引用它，所以这些词不该出现在产物任何文本文件里。
+  console.log('');
+  console.log('规则版界面自检（不得出现截图上传文案）：');
+  let shotBad = 0;
+  for (const w of SCREENSHOT_WORDS) {
+    const hit = textFiles.find((f) => {
+      try {
+        return fs.readFileSync(f.path, 'utf8').indexOf(w) >= 0;
+      } catch (e) {
+        return false;
+      }
+    });
+    if (hit) {
+      shotBad += 1;
+      console.log('  [FAIL] 产物含「' + w + '」：' + path.relative(DIST, hit.path));
+    } else {
+      console.log('  [OK]   无「' + w + '」');
+    }
+  }
+  console.log('');
+  if (shotBad) {
+    console.log('[FAIL] 规则版里出现了截图上传文案，界面应只有粘贴卡');
+    return 1;
+  }
+  console.log('[OK] 规则版界面只有粘贴卡，无截图上传文案');
   return bad ? 1 : 0;
 }
 
