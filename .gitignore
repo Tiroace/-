@@ -57,3 +57,6 @@ reports/preview-qr-*.jpg
 reports/upload-*/
 reports/preview-*.jpg
 
+
+src/tmp-*.js
+
