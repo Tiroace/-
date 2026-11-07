@@ -52,7 +52,7 @@
           <view class="ico-doc"></view>
         </view>
         <text class="empty-t">还没有检查记录</text>
-        <text class="empty-s">下次收到面试邀约，先截图发过来。</text>
+        <text class="empty-s">{{ VISION_ENGINE ? '下次收到面试邀约，先截图发过来。' : '下次收到面试邀约，把招聘信息粘贴过来。' }}</text>
         <view class="btn-small" @tap="gotoIndex"><text>去检查</text></view>
       </view>
 

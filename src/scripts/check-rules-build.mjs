@@ -21,6 +21,14 @@ const NET_PAGES = ['pages/index/index.js', 'pages/mine/index.js'];
 // 规则版界面上不得出现的截图类文案（双版本令第二节第 2 条：规则版界面不出现「上传截图」）。
 // 规则版首页是粘贴卡；上传卡只属于识图版。这些词若出现在规则版包内，说明上传卡被带进去了。
 const SCREENSHOT_WORDS = ['点这里选截图', '最多 3 张', '选截图，开始检查', '再加一张'];
+// 规则版报告页/报告模板的载体措辞（老板 2026-11-07 定）：粘贴文字就该说「文字」，不能说「截图」。
+// 提审要用的画面里出现「截图」会被当成功能与描述不符。
+const REPORT_SCREENSHOT_WORDS = [
+  '依据你上传的截图',
+  '截图里没看到明显风险',
+  '截图里没提到',
+  '这张截图里没发现具体问题',
+];
 
 // sk- 只算「像密钥」的：sk- 后面跟一长串字母数字。文档/普通文案里的 sk- 不算，但要单独列出来供人工确认。
 const SECRET_LIKE = /sk-[A-Za-z0-9_-]{16,}/;
@@ -147,6 +155,32 @@ function main() {
     return 1;
   }
   console.log('[OK] 规则版界面只有粘贴卡，无截图上传文案');
+
+  // 报告页载体措辞：规则版说「文字」，不能出现「截图」（老板 2026-11-07 定）
+  console.log('');
+  console.log('规则版报告页措辞自检（粘贴文字不能说「截图」）：');
+  let copyBad = 0;
+  for (const w of REPORT_SCREENSHOT_WORDS) {
+    const hit = textFiles.find((f) => {
+      try {
+        return fs.readFileSync(f.path, 'utf8').indexOf(w) >= 0;
+      } catch (e) {
+        return false;
+      }
+    });
+    if (hit) {
+      copyBad += 1;
+      console.log('  [FAIL] 产物含「' + w + '」：' + path.relative(DIST, hit.path));
+    } else {
+      console.log('  [OK]   无「' + w + '」');
+    }
+  }
+  console.log('');
+  if (copyBad) {
+    console.log('[FAIL] 规则版报告页还在说「截图」，应改成「文字」');
+    return 1;
+  }
+  console.log('[OK] 规则版报告页措辞为「文字」，无「截图」残留');
   return bad ? 1 : 0;
 }
 

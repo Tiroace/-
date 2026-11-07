@@ -21,11 +21,14 @@ export const DIMENSIONS = [
 ];
 
 // 整体结论（overall）→ 标题与配色变量名
+// 带载体的 unknown 标题从 reportCopy.js 取（规则版「文字」/识图版「截图」）
+import { VERDICT_TITLE } from '@/common/reportCopy.js';
+
 export const OVERALL = {
   red: { title: '这份工作，建议先别去', lamp: 'red' },
   amber: { title: '先问清楚，再决定去不去', lamp: 'amber' },
   green: { title: '看起来没问题，可以去', lamp: 'green' },
-  unknown: { title: '截图信息不够，再补一张', lamp: 'off' },
+  unknown: { title: VERDICT_TITLE.unknown, lamp: 'off' },
 };
 
 // 发现来源标签（任务书 §6.3）

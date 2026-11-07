@@ -2,6 +2,8 @@
 // 来源：src/scripts/example-samples.json 的固定虚构样本，逐条跑确定性引擎得到。
 // 版本号取 engine/prompts.py 的 RULES_VERSION，与真实引擎输出同构。
 // 内容是虚构的，不指向任何公司。
+import { IS_IMAGE } from '@/common/reportCopy.js';
+
 export const EXAMPLE_REPORTS = {
   "red": {
     "is_job_posting": true,
@@ -296,6 +298,42 @@ export const EXAMPLE_REPORTS = {
   }
 };
 
+// 示例报告是静态数据（照抄真实报告结构）。规则版没有截图，
+// 所以取用时把「截图」类措辞换成「文字」类，改一处就够，不维护两份数据。
+// 对应老板 2026-11-07 要求：规则版画面不得出现「截图」（尤其是「上传截图」）。
+const WORD_MAP = [
+  ['依据你上传的截图', '依据你提供的文字'],
+  ['截图里没看到明显风险', '文字里没看到明显风险'],
+  ['截图里没提到', '文字里没提到'],
+  ['这张截图里没发现具体问题', '这段文字里没发现具体问题'],
+  ['截图信息不够，再补一张', '信息不够，再补充一些文字'],
+  ['截图里没读到', '文字里没读到'],
+  ['信息不足，再补一张截图', '信息不足，再补充一些文字'],
+  ['截图里没发现', '文字里没发现'],
+  ['来自截图', '来自你提供的文字'],
+];
+
+function toTextWording(value) {
+  if (typeof value === 'string') {
+    let s = value;
+    WORD_MAP.forEach(([from, to]) => {
+      s = s.split(from).join(to);
+    });
+    return s;
+  }
+  if (Array.isArray(value)) return value.map(toTextWording);
+  if (value && typeof value === 'object') {
+    const out = {};
+    Object.keys(value).forEach((k) => {
+      out[k] = toTextWording(value[k]);
+    });
+    return out;
+  }
+  return value;
+}
+
 export function getExampleReport(overall) {
-  return EXAMPLE_REPORTS[overall] || null;
+  const rep = EXAMPLE_REPORTS[overall] || null;
+  if (!rep) return null;
+  return IS_IMAGE ? rep : toTextWording(rep);
 }

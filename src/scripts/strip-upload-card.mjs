@@ -87,11 +87,47 @@ function main() {
 
   if (!changes.length) {
     console.log('[提示] 产物里没有上传卡内容，无需清理');
-    return 0;
+  } else {
+    console.log('规则版清理上传卡：');
+    changes.forEach((c) => console.log('  · ' + c));
+    console.log('[OK] 上传卡已从规则版产物移除（' + changes.length + ' 处）');
   }
-  console.log('规则版清理上传卡：');
-  changes.forEach((c) => console.log('  · ' + c));
-  console.log('[OK] 上传卡已从规则版产物移除（' + changes.length + ' 处）');
+
+  // 4. 报告措辞：规则版说「文字」，不能说「截图」（老板 2026-11-07 定）。
+  // 示例报告是生成出来的静态数据，里面写死了截图措辞；运行时虽已替换，
+  // 但字符串仍会进包，提审截图/代码审查都会露出来，所以这里在产物里直接改写。
+  const WORD_MAP = [
+    ['依据你上传的截图', '依据你提供的文字'],
+    ['截图里没看到明显风险', '文字里没看到明显风险'],
+    ['截图里没提到', '文字里没提到'],
+    ['这张截图里没发现具体问题', '这段文字里没发现具体问题'],
+    ['截图信息不够，再补一张', '信息不够，再补充一些文字'],
+    ['信息不足，再补一张截图', '信息不足，再补充一些文字'],
+    ['来自截图', '来自你提供的文字'],
+  ];
+  const copyChanges = [];
+  for (const file of walk(DIST)) {
+    if (!/\.js$/.test(file)) continue;
+    let raw;
+    try {
+      raw = fs.readFileSync(file, 'utf8');
+    } catch (e) {
+      continue;
+    }
+    let next = raw;
+    WORD_MAP.forEach(([from, to]) => {
+      next = next.split(from).join(to);
+    });
+    if (next !== raw) {
+      fs.writeFileSync(file, next, 'utf8');
+      copyChanges.push(path.relative(DIST, file));
+    }
+  }
+  if (copyChanges.length) {
+    console.log('规则版改写报告载体措辞（截图→文字）：');
+    copyChanges.forEach((c) => console.log('  · ' + c));
+  }
+  console.log('[OK] 规则版产物措辞检查完成');
   return 0;
 }
 

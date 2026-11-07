@@ -29,8 +29,8 @@
         </view>
       </view>
 
-      <!-- ③ 依据行 -->
-      <text class="basis">依据你上传的截图，{{ checkTime }} 检查</text>
+      <!-- ③ 依据行：规则版「依据你提供的文字」，识图版「依据你上传的截图」 -->
+      <text class="basis">{{ BASIS_PREFIX }}，{{ checkTime }} 检查</text>
 
       <!-- ③b 你现在最该做的事（老板 2026-11-05 双版本令第四节第 1 条）：
            放在 6 项检查之前，红灯优先，最多 3 条，大字亮色 -->
@@ -128,7 +128,7 @@
       <view v-if="companyName" class="card corp-card">
         <view class="corp-head">
           <text class="corp-title">查一下这家公司</text>
-          <text class="corp-tag">来自截图</text>
+          <text class="corp-tag">{{ CORP_SOURCE_TAG }}</text>
         </view>
         <view class="corp-name-row">
           <text class="corp-name">{{ companyName }}</text>
@@ -203,6 +203,16 @@ import { getExampleReport } from '@/common/exampleReports.js';
 import { DIMENSIONS, SOURCE_LABEL, SHARE_TITLE } from '@/common/brand.js';
 // 免责声明（D20 定稿）+ 高危求助提示（110 / 96110 / 12333），统一来自 constants.js
 import { HELP_TIPS, DISCLAIMER_TEXT } from '@/common/constants.js';
+// 载体措辞集中管理：规则版说「文字」、识图版说「截图」（老板 2026-11-07 定）
+import {
+  BASIS_PREFIX,
+  VERDICT_TITLE as VERDICT_TITLE_COPY,
+  UNKNOWN_SUB,
+  DIM_NONE_TEXT,
+  EMPTY_FINDINGS,
+  EMPTY_FINDINGS_UNKNOWN,
+  CORP_SOURCE_TAG,
+} from '@/common/reportCopy.js';
 
 defineOptions({
   name: 'ReportPage',
@@ -216,13 +226,9 @@ defineOptions({
 // 高危求助提示（§8：110 报警 / 96110 反诈 / 12333 劳动权益）
 const helpTips = HELP_TIPS;
 
-// 4 种 overall 的固定标题（一字不改，D16：green 用「截图里没看到明显风险」）
-const VERDICT_TITLE = {
-  red: '这份工作，建议先别去',
-  amber: '先问清楚，再决定去不去',
-  green: '截图里没看到明显风险',
-  unknown: '截图信息不够，再补一张',
-};
+// 4 种 overall 的固定标题：带载体的 green/unknown 从 reportCopy.js 取
+// （规则版说「文字」、识图版说「截图」，老板 2026-11-07 定）
+const VERDICT_TITLE = VERDICT_TITLE_COPY;
 
 const report = ref(emptyReport());
 const isSample = ref(false);
@@ -294,7 +300,7 @@ const bannerHarm = computed(() => {
 // 副标题统计：只数红黄绿，灰灯不计；0 项省略；unknown 换固定文案
 const verdictSub = computed(() => {
   if (overall.value === 'unknown') {
-    return '截图里没读到岗位、薪资、公司这些关键信息';
+    return UNKNOWN_SUB;
   }
   const dims = report.value.dimensions || [];
   const count = (lv) => dims.filter((d) => d.level === lv).length;
@@ -325,9 +331,9 @@ const dimensions = computed(() => {
   });
 });
 
-// 灰灯固定文案「截图里没提到」，不许写「正常/无风险」
+// 灰灯固定文案（规则版「文字里没提到」/识图版「截图里没提到」），不许写「正常/无风险」
 function dimShort(d) {
-  if (d.level === 'none') return '截图里没提到';
+  if (d.level === 'none') return DIM_NONE_TEXT;
   return d.short || '';
 }
 
@@ -354,7 +360,7 @@ const findings = computed(() => {
 });
 
 const emptyFindingsText = computed(() =>
-  overall.value === 'unknown' ? '截图里没读到能判断的内容' : '这张截图里没发现具体问题'
+  overall.value === 'unknown' ? EMPTY_FINDINGS_UNKNOWN : EMPTY_FINDINGS
 );
 
 // 公司全称：从截图原文（evidence/context）里提取，不调外部数据

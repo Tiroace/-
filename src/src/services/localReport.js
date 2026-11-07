@@ -15,12 +15,16 @@ export const DIMENSION_KEYS = ['fee', 'work', 'title', 'pay', 'company', 'contra
 
 export const DIM_SHORT = { red: '有问题', amber: '要问清', green: '看着正常', none: '没提到' };
 
-export const OVERALL_SUMMARY = {
-  red: '有几处不对劲，先别急着去',
-  amber: '有几处要问清楚再决定',
-  green: '截图里没看到明显风险',
-  unknown: '信息不足，再补一张截图',
-};
+// 带载体措辞的文案统一从 reportCopy.js 取（规则版说「文字」、识图版说「截图」）。
+// 字段名保持不变，报告页不用改。
+export { GREY_QUESTION_TEMPLATE, EMPTY_QUESTIONS, EMPTY_VERIFY } from '@/common/reportCopy.js';
+export { OVERALL_SUMMARY } from '@/common/reportCopy.js';
+import {
+  OVERALL_SUMMARY as COPY_SUMMARY,
+  GREY_QUESTION_TEMPLATE as COPY_GREY_Q,
+  EMPTY_QUESTIONS as COPY_EMPTY_Q,
+  EMPTY_VERIFY as COPY_EMPTY_VERIFY,
+} from '@/common/reportCopy.js';
 
 export const DIMENSION_LABELS = {
   fee: '收费与借贷',
@@ -40,11 +44,11 @@ export const GREY_QUESTIONS = {
   contract: '试用期多久？合同签几年？社保从哪个月开始缴？',
 };
 
-export const GREY_QUESTION_TEMPLATE = '截图里没提到「{label}」，可以问 HR：{question}';
-
-export const EMPTY_QUESTIONS = ['请上传包含岗位名称、薪资、工作内容的招聘截图'];
-
-export const EMPTY_VERIFY = ['把岗位详情和 HR 聊天记录一起截图上传，判断更准'];
+// 模板里的载体措辞（规则版「文字」/识图版「截图」）
+const OVERALL_SUMMARY_TEXT = COPY_SUMMARY;
+const GREY_QUESTION_TEMPLATE_TEXT = COPY_GREY_Q;
+const EMPTY_QUESTIONS_TEXT = COPY_EMPTY_Q;
+const EMPTY_VERIFY_TEXT = COPY_EMPTY_VERIFY;
 
 const LEVEL_RANK = { none: 0, green: 1, amber: 2, red: 3 };
 
@@ -128,7 +132,7 @@ export function buildLocalReport(raw, hits, text, { minChars = 20 } = {}) {
   if (isJob) {
     dimensions.forEach((d) => {
       if (d.level === 'none') {
-        const q = GREY_QUESTION_TEMPLATE
+        const q = GREY_QUESTION_TEMPLATE_TEXT
           .replace('{label}', DIMENSION_LABELS[d.key] || d.key)
           .replace('{question}', GREY_QUESTIONS[d.key] || '');
         if (q.length <= 60 && questions.indexOf(q) < 0) questions.push(q);
@@ -158,11 +162,11 @@ export function buildLocalReport(raw, hits, text, { minChars = 20 } = {}) {
     report: {
       is_job_posting: isJob,
       overall,
-      summary: OVERALL_SUMMARY[overall] || OVERALL_SUMMARY.unknown,
+      summary: OVERALL_SUMMARY_TEXT[overall] || OVERALL_SUMMARY_TEXT.unknown,
       dimensions,
       findings,
-      questions_to_ask: questions.slice(0, 5).length ? questions.slice(0, 5) : EMPTY_QUESTIONS,
-      how_to_verify: verify.slice(0, 5).length ? verify.slice(0, 5) : EMPTY_VERIFY,
+      questions_to_ask: questions.slice(0, 5).length ? questions.slice(0, 5) : EMPTY_QUESTIONS_TEXT,
+      how_to_verify: verify.slice(0, 5).length ? verify.slice(0, 5) : EMPTY_VERIFY_TEXT,
       // 必须是 v主.次：'v3.0+ds' 过不了 schema，标识改放 meta
       rules_version: SCHEMA_RULES_VERSION,
       // 必须是 YYYY-MM-DD：取套路库版本日期
